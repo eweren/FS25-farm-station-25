@@ -8,6 +8,9 @@ import type { ListObjectResponse } from '../types/listObjectResponse';
 import type { Savegame } from '../types/savegame';
 import { config as configStore, localSavegames as localSavegamesStore } from '../stores/savegames.store';
 import { get } from 'svelte/store';
+import { toast } from 'svelte-sonner';
+import { getTranslate, type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
+import type { Readable } from "svelte/store";
 
 export const documentsDefaultDir = "My Games\\FarmingSimulator2025";
 
@@ -212,11 +215,17 @@ export async function openDir() {
   }
 }
 
-
-export async function startGame(event: Event) {
-  event.preventDefault();
+export async function watchFarmingSimulator() {
   try {
-    await invoke("watch_farming_simulator_25", { start: true });
+    await invoke("watch_farming_simulator_25");
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+export async function startGame() {
+  try {
+    await invoke("start_farming_simulator_25");
   } catch (e) {
     console.error(e);
   }
@@ -276,28 +285,31 @@ export async function selectFileToUpload() {
   await uploadData(file);
 }
 
-export async function syncSavegame(savegame: Savegame, remoteSavegames: ListObjectResponse[], config: Config) {
+export async function syncSavegame(savegame: Savegame, remoteSavegames: ListObjectResponse[], config: Config, t: TFnType<DefaultParamType, string, TranslationKey>) {
   try {
     const remoteSavegame = remoteSavegames.find((r) => r.savegameInfo.id === savegame.id);
     if (remoteSavegame) {
       const remoteSavegameDate = new Date(remoteSavegame.savegameInfo.saveDate);
       const localSavegameDate = new Date(savegame.saveDate);
       if (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime) {
-        console.log("download");
-        await downloadSavegame(remoteSavegame.key, get(localSavegamesStore), config);
+        await downloadSavegame(remoteSavegame.key, get(localSavegamesStore), config, t);
+        toast(t("sync_completed"), { duration: 2000 });
       } else if (remoteSavegameDate < localSavegameDate && remoteSavegame.savegameInfo.playTime !== savegame.playTime) {
-        console.log("upload");
-        await uploadSavegame(savegame, remoteSavegames, config);
+        await uploadSavegame(savegame, remoteSavegames, config, t);
+        toast(t("sync_completed"), { duration: 2000 });
+      } else {
+        toast(t("already_synced"), { duration: 2000 });
+
       }
     } else {
-      await uploadSavegame(savegame, remoteSavegames, config);
+      await uploadSavegame(savegame, remoteSavegames, config, t);
     }
   } catch (e) {
     console.error(e);
   }
 }
 
-export async function uploadSavegame(saveGame: Savegame, remoteSavegames: ListObjectResponse[], config: Config) {
+export async function uploadSavegame(saveGame: Savegame, remoteSavegames: ListObjectResponse[], config: Config, t: TFnType<DefaultParamType, string, TranslationKey>) {
   try {
     let remoteSavegameId = config.savegameMapping[saveGame.id];
     if (!remoteSavegameId) {
@@ -310,6 +322,7 @@ export async function uploadSavegame(saveGame: Savegame, remoteSavegames: ListOb
     if (savegameFiles == null) {
       return;
     }
+    const toastNr = toast(t("uploading_savegame"), { duration: Infinity });
     const zip = new JSZip();
 
     savegameFiles?.forEach((file) => {
@@ -336,14 +349,18 @@ export async function uploadSavegame(saveGame: Savegame, remoteSavegames: ListOb
       config.savegameMapping[saveGame.id] = remoteSavegameId;
       await saveConfig(config);
       console.log("File uploaded successfully");
+    } else {
+      toast(t("error"), { duration: 5000 });
     }
+    toast.dismiss(toastNr);
   } catch (e) {
     console.error(e);
   }
 }
 
-export async function downloadSavegame(saveGameKey: string, localSavegames: Savegame[], config: Config) {
+export async function downloadSavegame(saveGameKey: string, localSavegames: Savegame[], config: Config, t: TFnType<DefaultParamType, string, TranslationKey>) {
   try {
+    const toastNr = toast(t("downloading_savegame"), { duration: Infinity });
 
     const data = await fetch(
       `https://r2.eweren.workers.dev/${saveGameKey}`,
@@ -393,7 +410,9 @@ export async function downloadSavegame(saveGameKey: string, localSavegames: Save
     localSavegamesStore.set(await getSavegamesFromDir() ?? localSavegames);
     config.savegameMapping[saveGame] = saveGameKey;
     await saveConfig(config);
+    toast.dismiss(toastNr);
   } catch (e) {
+    toast(t("error"), { duration: 5000 });
     console.error(e);
   }
 }

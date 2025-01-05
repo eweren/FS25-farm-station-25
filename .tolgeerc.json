@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.tolgee.io/cli-schema.json",
+  "projectId": 4,
+  "apiUrl": "https://translate.lila.glass/",
+  "push": {
+    "files": [
+      {
+        "path": "./src/i18n/de.json",
+        "language": "de"
+      },
+      {
+        "path": "./src/i18n/en.json",
+        "language": "en"
+      }
+    ],
+    "forceMode": "OVERRIDE"
+  },
+  "pull": {
+    "path": "./src/i18n"
+  }
+}

@@ -3,38 +3,20 @@
   import { listen } from "@tauri-apps/api/event";
 
   import SavegameTable from "../lib/ui/savegameTable.svelte";
-  import type { Savegame } from "../lib/types/savegame";
-  import type { ListObjectResponse } from "../lib/types/listObjectResponse";
   import {
-    createZip,
     getSavegamesFromDir,
     getSavegamesFromRemote,
     loadConfig,
-    openDir,
     startGame,
   } from "../lib/sync/utils";
-  import type { Config } from "../lib/types/config";
   import {
     config,
     localSavegames,
     remoteSavegames,
   } from "../lib/stores/savegames.store";
-
-  listen("process-running", (e) => {
-    console.log("Farming simulator is running", e);
-  });
-
-  listen("process-started", (e) => {
-    console.log("Farming simulator started", e);
-  });
-
-  listen("process-not-running", (e) => {
-    console.log("Farming simulator is not running", e);
-  });
-
-  listen("process-exited", (e) => {
-    console.log("Farming simulator exited", e);
-  });
+  import { getTranslate, T } from "@tolgee/svelte";
+  import { GameStatus, gameStatus } from "../lib/stores/gameStatus.store";
+  import { toast } from "svelte-sonner";
 
   onMount(async () => {
     localSavegames.set((await getSavegamesFromDir()) ?? []);
@@ -45,6 +27,8 @@
       console.error("Error fetching S3 buckets:", error);
     }
   });
+
+  const { t } = getTranslate();
 </script>
 
 <main class="container">
@@ -57,22 +41,44 @@
 
   <div class="savegames">
     {#if $localSavegames == null || $remoteSavegames == null}
-      <p>Spielstände werden geladen</p>
+      <p>
+        <T keyName="savegames_loading" />
+      </p>
     {:else if $localSavegames.length === 0 && $remoteSavegames.length === 0}
-      <p>Keine lokalen Spielstände gefunden</p>
+      <p>
+        <T keyName="savegames_no_found" />
+      </p>
     {:else}
       <SavegameTable />
     {/if}
   </div>
 
-  <button class="absolute top-2 right-2" onclick={() => location.reload()}>
-    Reload
+  <button
+    class="absolute top-2 right-2 px-2 py-1"
+    onclick={() => location.reload()}
+  >
+    <T keyName="reload" />
   </button>
 
   <div class="h-8"></div>
-  <button class="fixed bottom-2 right-2 left-2" onclick={startGame}>
+  <button
+    disabled={$gameStatus === GameStatus.RUNNING ||
+      $gameStatus === GameStatus.STARTING}
+    class="fixed bottom-2 right-2 left-2"
+    onclick={(e) => {
+      e.preventDefault();
+
+      if (
+        $gameStatus !== GameStatus.RUNNING &&
+        $gameStatus !== GameStatus.STARTING
+      ) {
+        toast($t("start_game_status_starting"));
+        startGame();
+      }
+    }}
+  >
     <span class="solar--play-outline"></span>
-    FS25 starten
+    <T keyName={`start_game_status_${$gameStatus}`} />
   </button>
 </main>
 

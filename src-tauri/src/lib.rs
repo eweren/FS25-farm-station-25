@@ -5,12 +5,15 @@ use winapi::shared::minwindef::DWORD;
 
 static mut PROCESS_EXITED: bool = false;
 static mut PROCESS_RUNNING: bool = false;
+static PROCESS_NAME: &str = "FarmingSimulator2025Game.exe";
+static PROCESS_PATH: &str =
+    r"C:\Program Files (x86)\Farming Simulator 2025\FarmingSimulator2025.exe";
 
 #[tauri::command]
-fn watch_farming_simulator_25(app: AppHandle, start: bool) {
+fn watch_farming_simulator_25(app: AppHandle) {
     let app_handle = app.clone();
     std::thread::spawn(move || {
-        check_process(start, &app_handle);
+        check_process(&app_handle);
 
         loop {
             if (unsafe { PROCESS_EXITED } == true) {
@@ -19,42 +22,41 @@ fn watch_farming_simulator_25(app: AppHandle, start: bool) {
                 }
                 break;
             }
-            check_process(false, &app_handle);
+            check_process(&app_handle);
             std::thread::sleep(Duration::from_secs(1));
         }
     });
 }
 
-fn check_process(start_if_not_running: bool, app: &AppHandle) {
-    let process_name = "FarmingSimulator2025Game.exe";
-    let process_path = r"C:\Program Files (x86)\Farming Simulator 2025\FarmingSimulator2025.exe";
+#[tauri::command]
+fn start_farming_simulator_25(app: AppHandle) {
+    if let Some(_process_id) = get_process_id(PROCESS_NAME) {
+        return;
+    }
+    Command::new(PROCESS_PATH)
+        .spawn()
+        .expect("Failed to start process");
 
-    if let Some(_process_id) = get_process_id(process_name) {
+    app.emit("process-started", ()).unwrap();
+}
+
+fn check_process(app: &AppHandle) {
+    if let Some(_process_id) = get_process_id(PROCESS_NAME) {
         unsafe {
             PROCESS_RUNNING = true;
         }
         app.emit("process-running", ()).unwrap();
-        println!("Process {} is running", process_name);
-    } else if start_if_not_running {
-        Command::new(process_path)
-            .spawn()
-            .expect("Failed to start process");
-
-        println!("Process {} started", process_name);
-        app.emit("process-started", ()).unwrap();
     } else {
         if unsafe { PROCESS_RUNNING } == true {
             app.emit("process-exited", ()).unwrap();
             unsafe {
                 PROCESS_EXITED = true;
             }
-            println!("Process {} exited", process_name);
         }
         unsafe {
             PROCESS_RUNNING = false;
         }
         app.emit("process-not-running", ()).unwrap();
-        println!("Process {} is not running", process_name);
     }
 }
 
@@ -93,7 +95,10 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![watch_farming_simulator_25])
+        .invoke_handler(tauri::generate_handler![
+            watch_farming_simulator_25,
+            start_farming_simulator_25
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

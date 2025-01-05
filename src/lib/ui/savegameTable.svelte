@@ -1,9 +1,14 @@
 <script lang="ts">
   import * as Table from "$lib/components/ui/table/index.js";
+  import { getTranslate, T } from "@tolgee/svelte";
   import {
     config,
+    localOnlySavegames,
     localSavegames,
+    processingSavegames,
+    remoteOnlySavegames,
     remoteSavegames,
+    savegamesWithRemote,
   } from "../stores/savegames.store";
   import {
     downloadSavegame,
@@ -11,26 +16,9 @@
     syncSavegame,
     uploadSavegame,
   } from "../sync/utils";
+  import { toast } from "svelte-sonner";
 
-  $: savegamesWithRemote = $localSavegames.filter(
-    (savegame) =>
-      $config.savegameMapping[savegame.id] != null &&
-      $remoteSavegames.some(
-        (s) => s.key === $config.savegameMapping[savegame.id],
-      ),
-  );
-  $: localOnlySavegames = $localSavegames.filter(
-    (savegame) =>
-      $config.savegameMapping[savegame.id] == null ||
-      !$remoteSavegames.some(
-        (s) => s.key === $config.savegameMapping[savegame.id],
-      ),
-  );
-
-  $: remoteOnlySavegames = $remoteSavegames.filter(
-    (savegame) =>
-      !Object.values($config.savegameMapping).includes(savegame.key),
-  );
+  const { t } = getTranslate();
 
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
     day: "2-digit",
@@ -43,29 +31,37 @@
     const minutes = Math.floor(playtime % 60);
     return `${hours}h ${minutes}m`;
   };
-
-  let processingSavegames = new Set<string>();
 </script>
 
 <Table.Root>
   <Table.Header>
     <Table.Row class="text-left pointer-events-none">
-      <Table.Head class="min-w-[100px]">Karte</Table.Head>
-      <Table.Head>Spieler</Table.Head>
-      <Table.Head>Zuletzt</Table.Head>
-      <Table.Head>Spielzeit</Table.Head>
-      <Table.Head class="text-center">Status</Table.Head>
+      <Table.Head class="min-w-[100px]">
+        <T keyName="map" />
+      </Table.Head>
+      <Table.Head>
+        <T keyName="players" /></Table.Head
+      >
+      <Table.Head>
+        <T keyName="last_played" /></Table.Head
+      >
+      <Table.Head>
+        <T keyName="game_time" /></Table.Head
+      >
+      <Table.Head class="text-center">
+        <T keyName="status" /></Table.Head
+      >
     </Table.Row>
   </Table.Header>
   <Table.Body class="text-left text-primary">
-    {#if savegamesWithRemote.length > 0}
+    {#if $savegamesWithRemote.length > 0}
       <Table.Row>
-        <Table.Cell class="text-start text-default pointer-events-none"
-          >Synchronisierte Spielstände</Table.Cell
-        >
+        <Table.Cell class="text-start text-default pointer-events-none">
+          <T keyName="synced_savegames" />
+        </Table.Cell>
       </Table.Row>
     {/if}
-    {#each savegamesWithRemote as savegame}
+    {#each $savegamesWithRemote as savegame}
       <Table.Row>
         <Table.Cell>{savegame.map}</Table.Cell>
         <Table.Cell
@@ -84,31 +80,29 @@
             disabled={processingSavegames.has(savegame.id)}
             onclick={async () => {
               processingSavegames.add(savegame.id);
-              processingSavegames = new Set(processingSavegames);
-              await syncSavegame(savegame, $remoteSavegames, $config);
+              await syncSavegame(savegame, $remoteSavegames, $config, $t);
               remoteSavegames.set(await getSavegamesFromRemote());
               processingSavegames.delete(savegame.id);
-              processingSavegames = new Set(processingSavegames);
             }}
-            title="Spielstand synchronisieren"
-            aria-label="Spielstand synchronisieren"
+            title={$t("sync_savegame")}
+            aria-label={$t("sync_savegame")}
           >
             <span class="solar--refresh-bold w-1 h-1"></span>
           </button>
         </Table.Cell>
       </Table.Row>
     {/each}
-    {#if localOnlySavegames.length > 0}
+    {#if $localOnlySavegames.length > 0}
       <Table.Row>
         <Table.Cell
           class="text-start text-default pointer-events-none"
           colspan={5}
         >
-          Lokale Spielstände</Table.Cell
-        >
+          <T keyName="local_savegames" />
+        </Table.Cell>
       </Table.Row>
     {/if}
-    {#each localOnlySavegames as savegame}
+    {#each $localOnlySavegames as savegame}
       <Table.Row>
         <Table.Cell>{savegame.map}</Table.Cell>
         <Table.Cell
@@ -126,34 +120,32 @@
             disabled={processingSavegames.has(savegame.id)}
             onclick={async () => {
               processingSavegames.add(savegame.id);
-              processingSavegames = new Set(processingSavegames);
-              await uploadSavegame(savegame, $remoteSavegames, $config);
+              await uploadSavegame(savegame, $remoteSavegames, $config, $t);
               remoteSavegames.set(await getSavegamesFromRemote());
               console.log($remoteSavegames);
               processingSavegames.delete(savegame.id);
-              processingSavegames = new Set(processingSavegames);
             }}
             class="bg-primary text-white p-2"
-            title="Spielstand hochladen"
-            aria-label="Spielstand hochladen"
+            title={$t("upload_savegame")}
+            aria-label={$t("upload_savegame")}
           >
             <span class="solar--cloud-upload-outline w-1 h-1"></span>
           </button>
         </Table.Cell>
       </Table.Row>
     {/each}
-    {#if remoteOnlySavegames.length > 0}
+    {#if $remoteOnlySavegames.length > 0}
       <Table.Row>
         <!-- Full width cell -->
         <Table.Cell
           colspan={5}
           class="text-start text-default pointer-events-none"
         >
-          Remote Spielstände</Table.Cell
-        >
+          <T keyName="remote_savegames" />
+        </Table.Cell>
       </Table.Row>
     {/if}
-    {#each remoteOnlySavegames as remoteSavegameData}
+    {#each $remoteOnlySavegames as remoteSavegameData}
       {@const remoteSavegame = remoteSavegameData.savegameInfo}
       <Table.Row>
         <Table.Cell>{remoteSavegame.map}</Table.Cell>
@@ -173,18 +165,17 @@
             disabled={processingSavegames.has(remoteSavegameData.key)}
             onclick={async () => {
               processingSavegames.add(remoteSavegameData.key);
-              processingSavegames = new Set(processingSavegames);
               await downloadSavegame(
                 remoteSavegameData.key,
                 $localSavegames,
                 $config,
+                $t,
               );
               remoteSavegames.set(await getSavegamesFromRemote());
               processingSavegames.delete(remoteSavegameData.key);
-              processingSavegames = new Set(processingSavegames);
             }}
-            title="Spielstand synchronisieren"
-            aria-label="Spielstand synchronisieren"
+            title={$t("sync_savegame")}
+            aria-label={$t("sync_savegame")}
           >
             <span class="solar--cloud-download-outline w-1 h-1"></span>
           </button>
