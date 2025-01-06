@@ -2,7 +2,7 @@ import { listen } from '@tauri-apps/api/event';
 import { writable, get } from "svelte/store";
 import { syncSavegame, watchFarmingSimulator } from '../sync/utils';
 import { config, processingSavegames, remoteSavegames, savegamesWithRemote } from './savegames.store';
-import { getTolgee } from '@tolgee/svelte';
+import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
 
 export enum GameStatus {
   RUNNING = "running",
@@ -12,8 +12,11 @@ export enum GameStatus {
   UNKNOWN = "unknown"
 }
 
+export const cachedT = writable<TFnType<DefaultParamType, string, TranslationKey>>((props) => props.toString());
+
 const createGameStatusStore = () => {
   const state = writable<GameStatus>(GameStatus.UNKNOWN);
+
 
   listen("process-running", (e) => {
     if (get(state) !== GameStatus.RUNNING) {
@@ -36,18 +39,20 @@ const createGameStatusStore = () => {
     }
   });
 
-  listen("process-exited", (e) => {
+  listen("process-exited", async (e) => {
     if (get(state) !== GameStatus.EXITED) {
       state.set(GameStatus.EXITED);
       const autoSyncableSavegames = get(savegamesWithRemote);
+      await new Promise(res => setTimeout(res, 1000))
 
-      autoSyncableSavegames.forEach(async (savegame) => {
+      console.log("Farming simulator exited and starting sync", e, autoSyncableSavegames.length);
+      for (const savegame of autoSyncableSavegames) {
         processingSavegames.add(savegame.id);
-        // Does not work :( todo
-        const tolgee = getTolgee();
-        await syncSavegame(savegame, get(remoteSavegames), get(config), tolgee.value.t);
-      });
-      console.log("Farming simulator exited and starting sync", e);
+        console.log("Syncing", savegame.id);
+        await syncSavegame(savegame, get(cachedT), false);
+        processingSavegames.delete(savegame.id);
+      }
+      console.log("Sync complete", e);
     }
   });
 

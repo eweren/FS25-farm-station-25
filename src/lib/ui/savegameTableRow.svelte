@@ -1,0 +1,95 @@
+<script lang="ts">
+  import * as Table from "$lib/components/ui/table/index.js";
+  import { getTranslate } from "@tolgee/svelte";
+  import type { Savegame } from "../types/savegame";
+  import { localMods, processingSavegames } from "../stores/savegames.store";
+  import { syncSavegame } from "../sync/utils";
+
+  const { t } = getTranslate();
+
+  export let savegame: Savegame;
+  export let type: "sync" | "local" | "remote";
+
+  const dateFormatter = new Intl.DateTimeFormat(undefined, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
+
+  const playtimeFormatter = (playtime: number) => {
+    const hours = Math.floor(playtime / 60);
+    const minutes = Math.floor(playtime % 60);
+    return `${hours}h ${minutes}m`;
+  };
+</script>
+
+<Table.Row>
+  <Table.Cell>
+    <div class="flex flex-col items-start">
+      <span
+        >{$t("savegame_no", {
+          number: savegame.id.replace("savegame", ""),
+        })}</span
+      >
+      <span class="text-foreground">{savegame.map}</span>
+    </div>
+  </Table.Cell>
+  <Table.Cell>
+    <div class="flex flex-col items-start">
+      <span title="">
+        {$t("mods_no", {
+          local: $localMods
+            .keys()
+            .filter((localMod) =>
+              savegame.mods.some((m) => m.modName === localMod),
+            )
+            .toArray().length,
+          number: savegame.mods.length,
+        })}
+      </span>
+      <span class="text-foreground">
+        {$t("players_no", {
+          number: savegame.farms.reduce(
+            (prev, f) => prev + f.players.length,
+            0,
+          ),
+        })}
+      </span>
+    </div>
+  </Table.Cell>
+  <Table.Cell class="text-center flex flex-col items-start">
+    <span>{dateFormatter.format(new Date(savegame.saveDate))}</span>
+    <span class="text-foreground">{playtimeFormatter(savegame.playTime)}</span>
+  </Table.Cell>
+  <Table.Cell class="text-center">
+    <button
+      class="bg-primary text-white btn-primary"
+      disabled={processingSavegames.has(savegame.id)}
+      onclick={async () => {
+        processingSavegames.add(savegame.id);
+        await syncSavegame(savegame, $t);
+        processingSavegames.delete(savegame.id);
+      }}
+      title={$t("sync_savegame")}
+      aria-label={$t("sync_savegame")}
+    >
+      {#if processingSavegames.has(savegame.id)}
+        <span
+          class="solar--refresh-bold w-1 h-1 animate-[spin_1s_linear_reverse_infinite]"
+        ></span>
+      {:else if type === "sync"}
+        <span class="solar--refresh-bold w-1 h-1"></span>
+      {:else if type === "local"}
+        <span class="solar--cloud-upload-outline w-1 h-1"></span>
+      {:else if type === "remote"}
+        <span class="solar--cloud-download-outline w-1 h-1"></span>
+      {/if}
+    </button>
+  </Table.Cell>
+</Table.Row>
+
+<style>
+  button.btn-primary {
+    padding: 0.5rem;
+  }
+</style>

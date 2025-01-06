@@ -9,6 +9,7 @@
   "players": "Players",
   "reload": "Update",
   "remote_savegames": "Remote savegames",
+  "savegame_no": "score {number}",
   "savegames_loading": "Savegames are loading",
   "savegames_no_found": "No local savegames found",
   "start_game": "Start FS25",
