@@ -29,8 +29,6 @@ export const remoteSavegames = (() => {
     return currentSavegames;
   }
 
-  current();
-
   return {
     ...savegames,
     current
@@ -56,8 +54,6 @@ export const remoteMods = (() => {
     return currentMods;
   }
 
-  current();
-
   return {
     ...mods,
     current
@@ -66,40 +62,48 @@ export const remoteMods = (() => {
 
 export const remoteOnlyMods = derived([localSavegames, localMods, remoteMods], ([localSavegames, localMods, remoteMods]) => {
   const uniqueMods = new Set(localSavegames.flatMap(s => s.mods).filter((mod) => !localMods.has(mod.modName)));
-  return [...Array.from(uniqueMods).map(mod => remoteMods.get(mod.modName) ?? mod)].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
+  const mods = [...Array.from(uniqueMods).map(mod => remoteMods.get(mod.modName) ?? mod)].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
+  console.log("Remote only mods: ", mods.length);
+  return mods;
 });
 
 export const localOnlyMods = derived([localMods, remoteMods], ([localMods, remoteMods]) => {
   const mods = [...Array.from(localMods.values()).filter(mod => !remoteMods.has(mod.modName))].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
-  console.log(mods.map(m => m.modName));
+  console.log("Local only mods: ", mods.length);
   return mods;
 });
 
 export const syncedMods = derived([localMods, remoteMods], ([localMods, remoteMods]) => {
-  return [...Array.from(localMods.values()).filter(mod => remoteMods.has(mod.modName))].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
+  const mods = [...Array.from(localMods.values()).filter(mod => remoteMods.has(mod.modName))].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
+  console.log("Synced mods: ", mods.length);
+  return mods;
 });
 
 export const processingMods = new SvelteSet<string>();
 export const processingAllMods = writable<boolean>(false);
 
-export const savegamesWithRemote = derived([localSavegames, config, remoteSavegames], ([localSavegames, config, remoteSavegames]) => localSavegames.filter(
-  (savegame) =>
-    config.savegameMapping[savegame.id] != null &&
-    remoteSavegames.some(
-      (s) => s.key === config.savegameMapping[savegame.id],
-    ),
+export const savegamesWithRemote = derived([localSavegames, config, remoteSavegames], ([localSavegames, { savegameMapping }, remoteSavegames]) => localSavegames.filter(
+  (savegame) => {
+    const savegames = savegameMapping[savegame.id] != null &&
+      remoteSavegames.some(
+        (s) => s.key === savegameMapping[savegame.id],
+      );
+    console.log("Synced savegames: ", JSON.parse(JSON.stringify({ localId: savegame.id, remoteSavegames: remoteSavegames.map(m => m.key) })), JSON.parse(JSON.stringify(savegameMapping)));
+    return savegames;
+
+  }
 ));
 
-export const localOnlySavegames = derived([localSavegames, config, remoteSavegames], ([localSavegames, config, remoteSavegames]) => localSavegames.filter(
+export const localOnlySavegames = derived([localSavegames, config, remoteSavegames], ([localSavegames, { savegameMapping }, remoteSavegames]) => localSavegames.filter(
   (savegame) =>
-    config.savegameMapping[savegame.id] == null ||
+    savegameMapping[savegame.id] == null ||
     !remoteSavegames.some(
-      (s) => s.key === config.savegameMapping[savegame.id],
+      (s) => s.key === savegameMapping[savegame.id],
     ),
 ));
 
-export const remoteOnlySavegames = derived([config, remoteSavegames], ([config, remoteSavegames]) => remoteSavegames.filter(
-  (savegame) => !Object.values(config.savegameMapping).includes(savegame.key),
+export const remoteOnlySavegames = derived([config, remoteSavegames], ([{ savegameMapping }, remoteSavegames]) => remoteSavegames.filter(
+  (savegame) => !Object.values(savegameMapping).includes(savegame.key),
 ));
 
 

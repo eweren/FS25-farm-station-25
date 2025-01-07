@@ -31,12 +31,23 @@
     localSavegames.set((await getSavegamesFromDir()) ?? []);
     config.set(await loadConfig($localSavegames));
     await getLocalMods();
-    await remoteMods.current();
     loading = false;
     tolgee.subscribe((t) => {
       $currentLanguage = t.getLanguage() ?? "en";
     });
   });
+
+  let lastTeamId: string | undefined;
+
+  $: {
+    if ($config.teamId != lastTeamId) {
+      lastTeamId = $config.teamId;
+      if (lastTeamId) {
+        remoteMods.current();
+        remoteSavegames.current();
+      }
+    }
+  }
 
   const tolgee = getTolgee();
 
@@ -178,7 +189,9 @@
       <button class="mt-auto btn-primary"> Team erstellen / beitreten </button>
     </form>
   {:else if loading}
-    <T keyName="loading" />
+    <span class="text-start text-xl">
+      <T keyName="loading" />
+    </span>
   {/if}
 
   <button

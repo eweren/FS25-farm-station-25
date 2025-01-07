@@ -1,12 +1,12 @@
 import { invoke } from '@tauri-apps/api/core';
-import { readDir, BaseDirectory, readFile, exists, writeFile, stat, mkdir } from '@tauri-apps/plugin-fs';
+import { readDir, BaseDirectory, readFile, exists, writeFile, stat, mkdir, remove } from '@tauri-apps/plugin-fs';
 import JSZip from 'jszip';
 import { open, confirm } from "@tauri-apps/plugin-dialog";
 import { convertXML } from 'simple-xml-to-json';
 import type { Config } from '../types/config';
 import type { ListObjectResponse } from '../types/listObjectResponse';
 import type { Savegame } from '../types/savegame';
-import { config, config as configStore, getTitleFromMod, localMods, localOnlyMods, localSavegames, localSavegames as localSavegamesStore, processingAllMods, processingMods, remoteMods, remoteSavegames } from '../stores/savegames.store';
+import { config, config as configStore, getTitleFromMod, localMods, localOnlyMods, localSavegames, localSavegames as localSavegamesStore, processingAllMods, processingMods, processingSavegames, remoteMods, remoteSavegames } from '../stores/savegames.store';
 import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
@@ -108,7 +108,7 @@ export async function getSavegamesFromDir() {
 }
 
 export async function getLocalMods() {
-  const modFiles: Array<Mod> = ((await invoke("read_mod_desc_files")) as Array<Mod>).sort((a, b) => a.modName.localeCompare(b.modName));
+  const modFiles: Array<Mod> = ((await invoke("read_mod_desc_files")) as Array<Mod & { mod_name: `FS25_${string}` }>).map(e => ({ ...e, modName: e.mod_name })).sort((a, b) => a.modName.localeCompare(b.modName));
   const modMap = new Map<string, Mod>();
   for (const modFile of modFiles) {
     modMap.set(modFile.modName, modFile);
@@ -130,7 +130,22 @@ export async function getSavegameFilesForUpload(saveGame: string) {
     path: dir
   }) as string;
 
-  return await readFile(`${saveGame}.zip`, {
+  const fileContent = await readFile(`${saveGame}.zip`, {
+    baseDir: BaseDirectory.AppLocalData,
+  });
+
+  const file = new File([fileContent], `${saveGame}.zip`);
+
+  return file;
+}
+
+export async function deleteSavegameZip(saveGame: string) {
+  const dir = await getFS25Dir();
+  if (dir == null) {
+    return;
+  }
+
+  await remove(`${saveGame}.zip`, {
     baseDir: BaseDirectory.AppLocalData,
   });
 }
@@ -208,22 +223,19 @@ export async function getSavegamesFromRemote() {
   try {
     const headers = getTeamHeader();
     if (!headers) {
-      toast(get(cachedT)("no_team_id"));
       return [];
     }
     const res = await fetch(`${protocol}://${r2Domain}`, { headers });
 
     if (res.status === 200) {
       const saveGames = await res.json() as Array<ListObjectResponse>;
-      console.log(saveGames);
-      return saveGames;
+      return saveGames.map(g => ({ ...g, savegameInfo: { ...g.savegameInfo, isRemote: true } }));
     } else {
       console.error("Failed to fetch save games from remote");
       throw new Error("Failed to fetch save games from remote");
     }
   } catch (e) {
-    await sleep(100);
-    return getSavegamesFromRemote();
+    config.update((c) => ({ savegameMapping: {}, teamId: undefined, inviteCode: undefined, gameDataDirectory: c.gameDataDirectory }));
   }
 }
 
@@ -231,7 +243,6 @@ export async function getModsFromRemote() {
   try {
     const headers = getTeamHeader();
     if (!headers) {
-      toast(get(cachedT)("no_team_id"));
       return;
     }
     const mods = await fetch(`${protocol}://${r2Domain}/_mods`, { headers }).then(
@@ -240,8 +251,7 @@ export async function getModsFromRemote() {
 
     return mods.sort((a, b) => a.modInfo.modName.localeCompare(b.modInfo.modName));
   } catch (e) {
-    await sleep(100);
-    return getModsFromRemote();
+    config.update((c) => ({ savegameMapping: {}, teamId: undefined, inviteCode: undefined, gameDataDirectory: c.gameDataDirectory }));
   }
 }
 
@@ -307,13 +317,19 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
     if (remoteSavegame) {
       const remoteSavegameDate = new Date(remoteSavegame.savegameInfo.saveDate);
       const localSavegameDate = new Date(savegame.saveDate);
-      if (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime) {
+
+      if (savegame.isRemote || remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime) {
         await downloadSavegame(remoteSavegame.key, t);
         toast.success(t("sync_completed"));
       } else if (remoteSavegameDate <= localSavegameDate && remoteSavegame.savegameInfo.playTime !== savegame.playTime) {
         await uploadSavegame(savegame, t);
         toast.success(t("sync_completed"));
       } else if (notifyOnMostRecent) {
+        config.update((config) => {
+          config.savegameMapping[savegame.id] = remoteSavegame.key;
+          return { ...config }
+        })
+        await saveConfig(get(config));
         toast.info(t("already_synced"));
 
       }
@@ -327,24 +343,26 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
 
 export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParamType, string, TranslationKey>) {
   try {
-    const toastNr = toast.loading(t("uploading_savegame"), { duration: Infinity });
+    let toastNr = toast.loading(t("zip_savegame", { savegame: saveGame.id }), { duration: Infinity });
     const headers = getTeamHeader();
     if (!headers) {
-      toast(t("no_team_id"));
       return;
     }
+
     let remoteSavegameId = get(config).savegameMapping[saveGame.id];
     if (!remoteSavegameId) {
 
-      const remoteSavegameNames = (await remoteSavegames.current()).map(r => parseInt(r.key.replace("savegame", "").replace(".zip", "")));
+      const remoteSavegameNames = (await remoteSavegames.current()).map(r => parseInt(r.key.split("/").pop()?.replace("savegame", "")?.replace(".zip", "") ?? "1"));
+      console.log(remoteSavegameNames);
       const newSavegameId = Math.max(...remoteSavegameNames, 0) + 1;
       remoteSavegameId = `savegame${newSavegameId}.zip`;
     }
 
-    console.log("Uploading savegame ${remoteSavegameId}...");
+    console.log(`Uploading savegame ${remoteSavegameId}...`);
 
     const savegameBuffer = await getSavegameFilesForUpload(saveGame.id);
     if (savegameBuffer == null) {
+      toast.dismiss(toastNr);
       return;
     }
 
@@ -353,9 +371,15 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
     const formData = new FormData();
     formData.append("file", file);
 
-    formData.append("savegameInfo", JSON.stringify(saveGame));
+    const savegameInfo = { ...saveGame, mods: saveGame.mods.length };
 
-    const { status } = await fetch(
+    formData.append("savegameInfo", JSON.stringify(savegameInfo));
+
+    toast.dismiss(toastNr);
+
+    toastNr = toast.loading(t("uploading_savegame", { savegame: saveGame.id }), { duration: Infinity });
+
+    const { status, path } = await fetch(
       `${protocol}://${r2Domain}/${remoteSavegameId}`,
       {
         body: formData,
@@ -364,9 +388,15 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
       },
     ).then(async (response) => response.json());
 
-    if (status === "success") {
-      get(config).savegameMapping[saveGame.id] = remoteSavegameId;
+    if (status === "success" && path != null) {
+      config.update((config) => {
+        config.savegameMapping[saveGame.id] = path;
+        return { ...config }
+      })
       await saveConfig(get(config));
+      await remoteSavegames.current();
+      processingSavegames.delete(saveGame.id);
+      await deleteSavegameZip(saveGame.id);
       console.log("File uploaded successfully");
     } else {
       toast(t("error"), { duration: 5000 });
@@ -382,10 +412,9 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
 
     const headers = getTeamHeader();
     if (!headers) {
-      toast(t("no_team_id"));
       return;
     }
-    const toastNr = toast.loading(t("downloading_savegame"), { duration: Infinity });
+    let toastNr = toast.loading(t("downloading_savegame"), { duration: Infinity });
 
     const data = await fetch(
       `${protocol}://${r2Domain}/${saveGameKey}`,
@@ -393,47 +422,33 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
         method: "GET",
         headers,
       },
-    ).then(async (response) => response.blob());
+    ).then(async (response) => response.arrayBuffer()).then(r => new Uint8Array(r));
 
-    // unzip the file
-    const zip = new JSZip();
-    const content = await zip.loadAsync(data);
+    toast.dismiss(toastNr);
+
+    toastNr = toast.loading(t("unzip_savegame"), { duration: Infinity });
+
+    const id = get(localSavegames).find((sg) => get(config).savegameMapping[sg.id] === saveGameKey)?.id;
 
     // save the files
     const dir = await getFS25Dir();
     if (dir == null) {
+      toast.dismiss(toastNr);
       return;
     }
+    const saveGame = id ?? `savegame${Math.max(...get(localSavegames).map(s => parseInt(s.id.replace("savegame", ""))), 0) + 1}`;
 
-    const saveGame = get(localSavegames).find((sg) => get(config).savegameMapping[sg.id] === saveGameKey)?.id ?? `savegame${Math.max(...get(localSavegames).map(s => parseInt(s.id.replace("savegame", ""))), 0) + 1}`;
+    const x = await invoke("save_savegame", { data, dir: `${dir}/${saveGame}` });
 
-    // check if directory exists and create it if not
-    let dirExists = await exists(`${dir}/${saveGame}`, {
-      baseDir: BaseDirectory.Document,
-    });
-
-    if (!dirExists) {
-      await mkdir(`${dir}/${saveGame}`, {
-        baseDir: BaseDirectory.Document,
-      });
+    if (x) {
+      localSavegamesStore.set(await getSavegamesFromDir() ?? get(localSavegames));
+      const conf = get(config)
+      conf.savegameMapping[saveGame] = saveGameKey;
+      await saveConfig(conf);
+    } else {
+      toast(t("error"), { duration: 5000 });
     }
-    dirExists = await exists(`${dir}/${saveGame}`, {
-      baseDir: BaseDirectory.Document,
-    });
 
-    const files = Object.keys(content.files).map(async (file) => {
-      const fileContent = await content.file(file)!.async("blob");
-      const arrayBuffer = await fileContent.arrayBuffer();
-      await writeFile(`${dir}/${saveGame}/${file}`, new Uint8Array(arrayBuffer), {
-        baseDir: BaseDirectory.Document,
-      });
-    });
-
-    await Promise.all(files);
-
-    localSavegamesStore.set(await getSavegamesFromDir() ?? get(localSavegames));
-    get(config).savegameMapping[saveGame] = saveGameKey;
-    await saveConfig(get(config));
     toast.dismiss(toastNr);
   } catch (e) {
     toast(t("error"), { duration: 5000 });
@@ -496,7 +511,6 @@ export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, T
   try {
     const headers = getTeamHeader();
     if (!headers) {
-      toast(t("no_team_id"));
       return;
     }
 
@@ -537,7 +551,6 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
 
     const headers = getTeamHeader();
     if (!headers) {
-      toast(t("no_team_id"));
       return;
     }
     const toastNr = toast.loading(t("downloading_mod", { title: getTitleFromMod(mod) }), { duration: Infinity });

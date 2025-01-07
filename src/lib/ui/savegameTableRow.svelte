@@ -37,15 +37,19 @@
   <Table.Cell>
     <div class="flex flex-col items-start">
       <span title="">
-        {$t("mods_no", {
-          local: $localMods
-            .keys()
-            .filter((localMod) =>
-              savegame.mods.some((m) => m.modName === localMod),
-            )
-            .toArray().length,
-          number: savegame.mods.length,
-        })}
+        {typeof savegame.mods === "number"
+          ? $t("mods_no", {
+              number: savegame.mods,
+            })
+          : $t("mods_no_compare", {
+              local: $localMods
+                .keys()
+                .filter((localMod) =>
+                  savegame.mods.some((m) => m.modName === localMod),
+                )
+                .toArray().length,
+              number: savegame.mods.length,
+            })}
       </span>
       <span class="text-foreground">
         {$t("players_no", {
@@ -64,11 +68,16 @@
   <Table.Cell class="text-center">
     <button
       class="bg-primary text-white btn-primary"
-      disabled={processingSavegames.has(savegame.id)}
+      disabled={processingSavegames.size > 0}
       onclick={async () => {
         processingSavegames.add(savegame.id);
-        await syncSavegame(savegame, $t);
-        processingSavegames.delete(savegame.id);
+        try {
+          await syncSavegame(savegame, $t);
+        } catch (e) {
+          console.error("Failed to sync savegame", e);
+        } finally {
+          processingSavegames.delete(savegame.id);
+        }
       }}
       title={$t("sync_savegame")}
       aria-label={$t("sync_savegame")}

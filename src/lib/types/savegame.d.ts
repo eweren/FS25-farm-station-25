@@ -8,6 +8,7 @@ export type Savegame = {
   money: number;
   mods: Array<Mod>;
   playTime: number;
+  isRemote?: boolean;
   farms: {
     name: string,
     money: string,

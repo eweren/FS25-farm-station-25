@@ -2,12 +2,11 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::error::Error;
 use std::fs::{self, File};
-use std::io::{prelude::*, BufReader};
+use std::io::{self, prelude::*, BufReader, Cursor, Write};
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 use tauri::path::BaseDirectory;
-use tauri::utils::acl::Value;
 use tauri::{AppHandle, Emitter, Manager};
 use walkdir::WalkDir;
 use winapi::shared::minwindef::DWORD;
@@ -25,7 +24,7 @@ static PROCESS_PATH: &str =
 struct ModDesc {
     filename: String,
     version: String,
-    modName: String,
+    mod_name: String,
     titles: JsonValue,
 }
 
@@ -98,6 +97,20 @@ fn read_file(app: AppHandle, path: &str, filename: &str) -> JsonValue {
     }
 }
 
+// data from frontend is ArrayBuffer
+#[tauri::command]
+fn save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonValue {
+    let dir_path = app.path().resolve(dir, BaseDirectory::Document).unwrap();
+
+    match unwrap_savegame(data, dir_path.as_path()) {
+        Ok(bool) => bool.into(),
+        Err(e) => {
+            eprintln!("Error creating zip archive: {}", e);
+            return JsonValue::Null;
+        }
+    }
+}
+
 #[tauri::command]
 fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
     let binding = app_handle
@@ -144,7 +157,7 @@ fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
         let titles = json.get("modDesc").unwrap().get("title").unwrap().clone();
 
         let r#mod = ModDesc {
-            modName: filename.replace(".zip", ""),
+            mod_name: filename.replace(".zip", ""),
             filename,
             titles,
             version: json
@@ -171,18 +184,6 @@ fn get_zip_file_paths(folder: &Path) -> Vec<PathBuf> {
             if path.is_file() && path.extension().and_then(|ext| ext.to_str()) == Some("zip") {
                 zip_paths.push(path);
             }
-        }
-    }
-    zip_paths
-}
-
-fn get_folder_content(folder: &Path) -> Vec<PathBuf> {
-    let mut zip_paths = Vec::new();
-    if folder.is_dir() {
-        for entry in fs::read_dir(folder).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            zip_paths.push(path);
         }
     }
     zip_paths
@@ -218,18 +219,31 @@ fn create_zip_archive(path: PathBuf, output_path: PathBuf) -> Result<JsonValue, 
     Ok(JsonValue::String(pth_str.to_string()))
 }
 
-// fn get_zip_file_contents(path_to_directory: PathBuf) -> Vec<u8> {
-//     let mut zip_file_contents = Vec::new();
-//     for entry in fs::read_dir(path_to_directory).unwrap() {
-//         let entry = entry.unwrap();
-//         let path = entry.path();
-//         if path.is_file() && path.extension().and_then(|ext| ext.to_str()) == Some("zip") {
-//             let mut file = File::open(path).unwrap();
-//             zip_file_contents.extend_from_slice(&mut file.read_to_string().unwrap().as_bytes());
-//         }
-//     }
-//     zip_file_contents
-// }
+fn unwrap_savegame(zip_bytes: Vec<u8>, dest_path: &Path) -> Result<JsonValue, Box<dyn Error>> {
+    let reader = Cursor::new(zip_bytes);
+    let mut archive = ZipArchive::new(reader)?;
+
+    for i in 0..archive.len() {
+        let mut file = archive.by_index(i)?;
+        let outpath = match file.enclosed_name() {
+            Some(path) => dest_path.join(path),
+            None => continue,
+        };
+        if file.name().ends_with('/') {
+            std::fs::create_dir_all(&outpath)?;
+        } else {
+            if let Some(parent) = outpath.parent() {
+                if !parent.exists() {
+                    std::fs::create_dir_all(parent)?;
+                }
+            }
+            let mut outfile = File::create(&outpath)?;
+            io::copy(&mut file, &mut outfile)?;
+        }
+    }
+
+    Ok(JsonValue::Bool(true))
+}
 
 fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> {
     let file = File::open(path_to_zip).unwrap();
@@ -309,7 +323,8 @@ pub fn run() {
             start_farming_simulator_25,
             convert_xml_to_json,
             read_file,
-            read_mod_desc_files
+            read_mod_desc_files,
+            save_savegame
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

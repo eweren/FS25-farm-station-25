@@ -2,33 +2,11 @@
   import * as Table from "$lib/components/ui/table/index.js";
   import { getTranslate, T } from "@tolgee/svelte";
   import {
-    localMods,
     localOnlySavegames,
-    processingSavegames,
     remoteOnlySavegames,
-    remoteSavegames,
     savegamesWithRemote,
   } from "../stores/savegames.store";
-  import {
-    downloadSavegame,
-    syncSavegame,
-    uploadSavegame,
-  } from "../sync/utils";
   import SavegameTableRow from "./savegameTableRow.svelte";
-
-  const { t } = getTranslate();
-
-  const dateFormatter = new Intl.DateTimeFormat(undefined, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "2-digit",
-  });
-
-  const playtimeFormatter = (playtime: number) => {
-    const hours = Math.floor(playtime / 60);
-    const minutes = Math.floor(playtime % 60);
-    return `${hours}h ${minutes}m`;
-  };
 </script>
 
 <Table.Root>
