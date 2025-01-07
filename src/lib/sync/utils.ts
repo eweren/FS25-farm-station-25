@@ -1,6 +1,5 @@
 import { invoke } from '@tauri-apps/api/core';
-import { readDir, BaseDirectory, readFile, exists, writeFile, stat, mkdir, remove } from '@tauri-apps/plugin-fs';
-import JSZip from 'jszip';
+import { readDir, BaseDirectory, readFile, exists, writeFile, remove } from '@tauri-apps/plugin-fs';
 import { open, confirm } from "@tauri-apps/plugin-dialog";
 import { convertXML } from 'simple-xml-to-json';
 import type { Config } from '../types/config';
@@ -11,8 +10,6 @@ import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
 import type { Mod, ModResponse } from '../types/mod';
-import { cachedT } from '../stores/gameStatus.store';
-import { sleep } from '../utils';
 
 const r2Domain = "r2.eweren.workers.dev"
 const protocol = "https"
@@ -164,6 +161,42 @@ export async function getLocalModForUpload(mod: Mod) {
   return file;
 }
 
+export async function getPlayerStatus() {
+  try {
+    const headers = getTeamHeader();
+    if (!headers) {
+      return;
+    }
+    const players = await fetch(`${protocol}://${r2Domain}/_playerStatus`, { headers }).then(
+      (r) => r.json() as Promise<Array<string>>,
+    );
+
+    return players;
+  } catch (e) {
+    console.log(e);
+  }
+}
+
+export async function changePlayState(playing: boolean) {
+  try {
+    const headers = getTeamHeader();
+    let name = get(config).name
+    if (!headers || name == null) {
+      return;
+    }
+
+    headers.append("content-type", "application/json")
+    await fetch(`${protocol}://${r2Domain}/_playerStatus`, {
+      headers,
+      method: "POST",
+      body: JSON.stringify({ playing, name })
+
+    });
+  } catch (e) {
+    console.log(e);
+  }
+}
+
 /**
  * Saves the config.
  */
@@ -273,7 +306,6 @@ export async function getFS25Dir(prompt = false) {
     }
     return documentsDefaultDir;
   } catch (e) {
-    console.log(e);
     return await openDir();
   }
 }
@@ -353,12 +385,10 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
     if (!remoteSavegameId) {
 
       const remoteSavegameNames = (await remoteSavegames.current()).map(r => parseInt(r.key.split("/").pop()?.replace("savegame", "")?.replace(".zip", "") ?? "1"));
-      console.log(remoteSavegameNames);
+
       const newSavegameId = Math.max(...remoteSavegameNames, 0) + 1;
       remoteSavegameId = `savegame${newSavegameId}.zip`;
     }
-
-    console.log(`Uploading savegame ${remoteSavegameId}...`);
 
     const savegameBuffer = await getSavegameFilesForUpload(saveGame.id);
     if (savegameBuffer == null) {
@@ -397,7 +427,6 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
       await remoteSavegames.current();
       processingSavegames.delete(saveGame.id);
       await deleteSavegameZip(saveGame.id);
-      console.log("File uploaded successfully");
     } else {
       toast(t("error"), { duration: 5000 });
     }
@@ -460,15 +489,16 @@ export async function uploadAllMods(t: TFnType<DefaultParamType, string, Transla
   try {
     const locMods = get(localOnlyMods);
     if (locMods.length === 0) {
-      console.log("No mods to sync");
       return;
     }
     processingAllMods.set(true);
-    console.log(`Syncing ${locMods.length} mods`);
+
     for (const mod of locMods) {
       await syncMod(mod, t);
     }
-    console.log("Synced all mods");
+
+    toast.success(t("every_mod_synced"), { duration: 10000, dismissable: true });
+
   } catch (e) {
     toast(t("error"), { duration: 5000 });
     console.error(e);
@@ -536,7 +566,6 @@ export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, T
 
     if (status === "success") {
       await remoteMods.current();
-      console.log("File uploaded successfully");
     } else {
       toast(t("error"), { duration: 5000 });
     }
@@ -555,7 +584,6 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
     }
     const toastNr = toast.loading(t("downloading_mod", { title: getTitleFromMod(mod) }), { duration: Infinity });
 
-
     // save the files
     const dir = await getFS25Dir();
     if (dir == null) {
@@ -570,13 +598,9 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
       },
     ).then(async (response) => response.arrayBuffer());
 
-
     await writeFile(`${dir}/mods/${mod.filename}`, new Uint8Array(data), {
       baseDir: BaseDirectory.Document,
     });
-
-
-    console.log("Downloaded")
 
     await getLocalMods();
 
@@ -588,18 +612,21 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
   }
 }
 
-export async function createTeam(teamId: string, inviteCode: string) {
+export async function createTeam(teamId: string, inviteCode: string, isCreate: boolean) {
 
   const formData = new FormData();
   formData.append("teamId", teamId);
   formData.append("inviteCode", inviteCode);
+  if (isCreate) {
+    formData.append("isCreate", "true");
+  }
   const res = await fetch(
     `${protocol}://${r2Domain}`,
     {
       body: formData,
       method: "POST",
     },
-  ).then(async (response) => response.json()) as { status: string, reason: string };
+  ).then(async (response) => response.json()) as { status: string, reason?: string, inviteCode?: string };
 
   return res;
 }

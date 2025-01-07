@@ -9,7 +9,7 @@
 </script>
 
 <div
-	class={cn("mt-1 text-sm [&_p]:leading-relaxed", className)}
+	class={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2", className)}
 	{...$$restProps}
 >
 	<slot />

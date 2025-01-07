@@ -1,8 +1,10 @@
 import { listen } from '@tauri-apps/api/event';
 import { writable, get } from "svelte/store";
-import { syncSavegame, watchFarmingSimulator } from '../sync/utils';
-import { config, processingSavegames, remoteSavegames, savegamesWithRemote } from './savegames.store';
+import { changePlayState, syncSavegame, watchFarmingSimulator } from '../sync/utils';
+import { processingSavegames, savegamesWithRemote } from './savegames.store';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
+import { getCurrentWindow, UserAttentionType } from '@tauri-apps/api/window';
+import { toast } from 'svelte-sonner';
 
 export enum GameStatus {
   RUNNING = "running",
@@ -25,10 +27,14 @@ const createGameStatusStore = () => {
     }
   });
 
-  listen("process-started", (e) => {
+  listen("process-started", async (e) => {
     if (get(state) !== GameStatus.STARTING) {
       state.set(GameStatus.STARTING);
       console.log("Farming simulator started", e);
+      await changePlayState(true);
+
+      const window = getCurrentWindow();
+      await window.minimize();
     }
   });
 
@@ -42,17 +48,22 @@ const createGameStatusStore = () => {
   listen("process-exited", async (e) => {
     if (get(state) !== GameStatus.EXITED) {
       state.set(GameStatus.EXITED);
+
+      await changePlayState(false);
+
+      const window = getCurrentWindow();
+      await window.requestUserAttention(UserAttentionType.Informational);
+      await window.unminimize()
+      await window.setFocus();
       const autoSyncableSavegames = get(savegamesWithRemote);
       await new Promise(res => setTimeout(res, 1000))
 
-      console.log("Farming simulator exited and starting sync", e, autoSyncableSavegames.length);
       for (const savegame of autoSyncableSavegames) {
         processingSavegames.add(savegame.id);
-        console.log("Syncing", savegame.id);
         await syncSavegame(savegame, get(cachedT), false);
         processingSavegames.delete(savegame.id);
       }
-      console.log("Sync complete", e);
+      toast.success(get(cachedT)("everything_synced"), { dismissable: true, duration: 10000 });
     }
   });
 

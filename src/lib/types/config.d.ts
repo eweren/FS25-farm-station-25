@@ -3,4 +3,5 @@ export interface Config {
   gameDataDirectory: string;
   teamId?: string;
   inviteCode?: string;
+  name?: string;
 }

@@ -9,6 +9,7 @@
 	} from "@tolgee/svelte";
 	import { Toaster } from "$lib/components/ui/sonner";
 	import { cachedT } from "../lib/stores/gameStatus.store";
+	import { onMount } from "svelte";
 
 	let { children } = $props();
 
@@ -24,6 +25,23 @@
 				en: () => import("../i18n/en.json"),
 			},
 		});
+
+	onMount(() => {
+		setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
+		window
+			.matchMedia("(prefers-color-scheme: dark)")
+			.addEventListener("change", (e) => {
+				const newIsDark = e.matches;
+				setTheme(newIsDark);
+			});
+	});
+
+	const setTheme = (isDark: boolean) => {
+		document.documentElement.classList.remove("dark");
+		if (isDark) {
+			document.documentElement.classList.add("dark");
+		}
+	};
 
 	cachedT.set(tolgee.t);
 </script>

@@ -14,7 +14,7 @@
 
 <svelte:element
 	this={level}
-	class={cn("mb-1 font-medium leading-none tracking-tight", className)}
+	class={cn("font-medium leading-none tracking-tight", className)}
 	{...$$restProps}
 >
 	<slot />

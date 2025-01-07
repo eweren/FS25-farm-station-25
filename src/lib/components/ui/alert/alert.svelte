@@ -3,7 +3,7 @@
 	import { type Variant, alertVariants } from "./index.js";
 	import { cn } from "$lib/utils.js";
 
-	type $$Props = HTMLAttributes<HTMLDivElement> & {
+	type $$Props = HTMLAttributes<HTMLButtonElement> & {
 		variant?: Variant;
 	};
 
@@ -12,6 +12,10 @@
 	export { className as class };
 </script>
 
-<div class={cn(alertVariants({ variant }), className)} {...$$restProps} role="alert">
+<button
+	type="button"
+	class={cn(alertVariants({ variant }), className)}
+	{...$$restProps}
+>
 	<slot />
-</div>
+</button>

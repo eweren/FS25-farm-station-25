@@ -12,13 +12,15 @@
   "app": {
     "windows": [
       {
-        "title": "FS25 Sync",
+        "title": "Farm Station 25",
+        "label": "main",
         "width": 500,
         "height": 750,
         "minWidth": 400,
         "minHeight": 400,
         "maximizable": false,
-        "resizable": true
+        "resizable": true,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --enable-features=OverlayScrollbar,msOverlayScrollbarWinStyle,msOverlayScrollbarWinStyleAnimation"
       }
     ],
     "security": {

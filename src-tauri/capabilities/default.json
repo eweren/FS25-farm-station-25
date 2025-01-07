@@ -13,6 +13,11 @@
     "fs:allow-document-write-recursive",
     "fs:allow-document-read-recursive",
     "fs:allow-config-write-recursive",
-    "fs:allow-applocaldata-write-recursive"
+    "fs:allow-applocaldata-write-recursive",
+    "core:window:allow-set-title",
+    "core:window:allow-set-focus",
+    "core:window:allow-unminimize",
+    "core:window:allow-minimize",
+    "core:window:allow-request-user-attention"
   ]
 }
