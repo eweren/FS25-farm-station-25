@@ -2,9 +2,10 @@
   import * as Table from "$lib/components/ui/table/index.js";
   import { getTranslate } from "@tolgee/svelte";
   import type { Savegame } from "../types/savegame";
-  import { localMods, processingSavegames } from "../stores/savegames.store";
-  import { syncSavegame } from "../sync/utils";
+  import { processingSavegames } from "../stores/savegamesAndMods.store";
+  import { syncSavegame } from "../sync/savegames.sync";
   import type { Mod } from "../types/mod";
+  import { localMods } from "../stores/savegamesAndMods.store";
 
   const { t } = getTranslate();
 

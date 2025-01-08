@@ -1,25 +1,16 @@
-import type { Config } from '../types/config';
 import type { ListObjectResponse } from '../types/listObjectResponse';
 import type { Savegame } from '../types/savegame';
-import { writable, derived, get } from 'svelte/store';
+import { writable, derived } from 'svelte/store';
 import { SvelteSet } from "svelte/reactivity";
-import { getModsFromRemote, getSavegamesFromRemote } from '../sync/utils';
+import { getSavegamesFromRemote } from '../sync/savegames.sync';
+import { config } from './config.store';
 import type { Mod } from '../types/mod';
-import { currentLanguage } from './language.store';
+import { getModsFromRemote, getTitleFromMod } from '../sync/mods.sync';
 
-export const getTitleFromMod = (mod: Mod) => {
-  if (mod.titles) {
-    const lang = get(currentLanguage);
-    return lang in mod.titles[0] ? mod.titles[0][lang][0] : Object.values(mod.titles[0])?.[0]?.[0] ?? mod.modName;
-  } else if (mod.modName) {
-    return mod.modName;
-  } else {
-    return "Unknown";
-  }
-
-}
-
+/** An array of all the local savegames */
 export const localSavegames = writable<Savegame[]>([]);
+
+/** An array of all the remote savegames */
 export const remoteSavegames = (() => {
   const savegames = writable<ListObjectResponse[]>([]);
 
@@ -35,12 +26,11 @@ export const remoteSavegames = (() => {
   }
 })();
 
-export const config = writable<Config>({
-  savegameMapping: {},
-  gameDataDirectory: "",
-});
 
+/** An array of all the local mods */
 export const localMods = writable<Map<string, Mod>>(new Map());
+
+/** An array of all the remote mods */
 export const remoteMods = (() => {
   const mods = writable<Map<string, Mod>>(new Map());
 
@@ -60,25 +50,32 @@ export const remoteMods = (() => {
   }
 })();
 
+/** An array of all mods that are only on the remote server */
 export const remoteOnlyMods = derived([localSavegames, localMods, remoteMods], ([localSavegames, localMods, remoteMods]) => {
   const uniqueMods = new Set(localSavegames.flatMap(s => s.mods).filter((mod) => !localMods.has(mod.modName)));
   const mods = [...Array.from(uniqueMods).map(mod => remoteMods.get(mod.modName) ?? mod)].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
   return mods;
 });
 
+/** An array of all mods that are only on the local server */
 export const localOnlyMods = derived([localMods, remoteMods], ([localMods, remoteMods]) => {
   const mods = [...Array.from(localMods.values()).filter(mod => !remoteMods.has(mod.modName))].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
   return mods;
 });
 
+/** An array of all mods that are synced between the local and remote server */
 export const syncedMods = derived([localMods, remoteMods], ([localMods, remoteMods]) => {
   const mods = [...Array.from(localMods.values()).filter(mod => remoteMods.has(mod.modName))].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
   return mods;
 });
 
+/** A set of all mods that are currently being processed */
 export const processingMods = new SvelteSet<string>();
+
+/** A writable boolean indicating whether all mods are currently being processed */
 export const processingAllMods = writable<boolean>(false);
 
+/** An array of all savegames that are synced between local and remote */
 export const savegamesWithRemote = derived([localSavegames, config, remoteSavegames], ([localSavegames, { savegameMapping }, remoteSavegames]) => localSavegames.filter(
   (savegame) => {
     const savegames = savegameMapping[savegame.id] != null &&
@@ -90,6 +87,7 @@ export const savegamesWithRemote = derived([localSavegames, config, remoteSavega
   }
 ));
 
+/** An array of all savegames that are only saved locally */
 export const localOnlySavegames = derived([localSavegames, config, remoteSavegames], ([localSavegames, { savegameMapping }, remoteSavegames]) => localSavegames.filter(
   (savegame) =>
     savegameMapping[savegame.id] == null ||
@@ -98,9 +96,11 @@ export const localOnlySavegames = derived([localSavegames, config, remoteSavegam
     ),
 ));
 
+/** An array of all savegames that are only saved remotely */
 export const remoteOnlySavegames = derived([config, remoteSavegames], ([{ savegameMapping }, remoteSavegames]) => remoteSavegames.filter(
   (savegame) => !Object.values(savegameMapping).includes(savegame.key),
 ));
 
 
+/** An array of all savegames that are currently being processed */
 export const processingSavegames = new SvelteSet<string>();

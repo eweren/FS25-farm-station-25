@@ -5,9 +5,9 @@
     localMods,
     processingAllMods,
     processingMods,
-  } from "../stores/savegames.store";
+  } from "../stores/savegamesAndMods.store";
   import type { Mod } from "../types/mod";
-  import { syncMod } from "../sync/utils";
+  import { syncMod } from "../sync/mods.sync";
 
   const { t } = getTranslate();
   const tolgee = getTolgee();

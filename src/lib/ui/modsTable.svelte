@@ -2,16 +2,13 @@
   import * as Table from "$lib/components/ui/table/index.js";
   import { getTranslate, T } from "@tolgee/svelte";
   import {
-    localMods,
     localOnlyMods,
-    localOnlySavegames,
     processingMods,
-    remoteMods,
     remoteOnlyMods,
     syncedMods,
-  } from "../stores/savegames.store";
+  } from "../stores/savegamesAndMods.store";
   import ModRow from "./modRow.svelte";
-  import { uploadAllMods } from "../sync/utils";
+  import { uploadAllMods } from "../sync/mods.sync";
 
   const { t } = getTranslate();
 </script>

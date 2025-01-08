@@ -10,6 +10,7 @@
 	import { Toaster } from "$lib/components/ui/sonner";
 	import { cachedT } from "../lib/stores/gameStatus.store";
 	import { onMount } from "svelte";
+	import { updateApp } from "../lib/updater";
 
 	let { children } = $props();
 
@@ -26,7 +27,7 @@
 			},
 		});
 
-	onMount(() => {
+	onMount(async () => {
 		setTheme(window.matchMedia("(prefers-color-scheme: dark)").matches);
 		window
 			.matchMedia("(prefers-color-scheme: dark)")
@@ -34,6 +35,7 @@
 				const newIsDark = e.matches;
 				setTheme(newIsDark);
 			});
+		await updateApp();
 	});
 
 	const setTheme = (isDark: boolean) => {

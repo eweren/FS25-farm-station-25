@@ -19,6 +19,7 @@
     "@tauri-apps/plugin-dialog": "~2",
     "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-process": "~2",
     "@tauri-apps/plugin-updater": "~2",
     "@tolgee/svelte": "^5.33.2",
     "jszip": "^3.10.1",

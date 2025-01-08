@@ -5,7 +5,7 @@
     localOnlySavegames,
     remoteOnlySavegames,
     savegamesWithRemote,
-  } from "../stores/savegames.store";
+  } from "../stores/savegamesAndMods.store";
   import SavegameTableRow from "./savegameTableRow.svelte";
 </script>
 
