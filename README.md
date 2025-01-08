@@ -1,3 +1,6 @@
+[![publish](https://github.com/eweren/FS25-farm-sync-25/actions/workflows/publish-to-auto-release.yml/badge.svg)](https://github.com/eweren/FS25-farm-sync-25/actions/workflows/publish-to-auto-release.yml)
+
+
 # Farming Simulator 2025 sync kit
 
 This is a sync application that can be used as a replacement for a dedicated server when you want to play Farming Simulator 2025 with your friends.

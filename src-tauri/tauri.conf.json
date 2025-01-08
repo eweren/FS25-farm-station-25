@@ -25,6 +25,7 @@
     ]
   },
   "bundle": {
+    "createUpdaterArtifacts": true,
     "active": true,
     "targets": "all",
     "icon": [
@@ -52,6 +53,14 @@
       "files": {},
       "hardenedRuntime": true,
       "minimumSystemVersion": "10.13"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDI4MzEwNDZDODdBRkRGRUIKUldUcjM2K0hiQVF4S0ZhQXlaTDZUY2YrRlRsSUFaMkFySGtUdUdUdTVkTUNkTU1IdC8vUFdTNGsK",
+      "endpoints": [
+        "https://github.com/eweren/FS25-farm-sync-25/releases/latest/download/latest.json"
+      ]
     }
   }
 }
