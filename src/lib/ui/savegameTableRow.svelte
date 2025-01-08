@@ -4,10 +4,11 @@
   import type { Savegame } from "../types/savegame";
   import { localMods, processingSavegames } from "../stores/savegames.store";
   import { syncSavegame } from "../sync/utils";
+  import type { Mod } from "../types/mod";
 
   const { t } = getTranslate();
 
-  export let savegame: Savegame;
+  export let savegame: (Omit<Savegame, "mods"> & { mods: number }) | Savegame;
   export let type: "sync" | "local" | "remote";
 
   const dateFormatter = new Intl.DateTimeFormat(undefined, {
@@ -45,10 +46,12 @@
               local: $localMods
                 .keys()
                 .filter((localMod) =>
-                  savegame.mods.some((m) => m.modName === localMod),
+                  (savegame.mods as Array<Mod>).some(
+                    (m) => m.modName === localMod,
+                  ),
                 )
                 .toArray().length,
-              number: savegame.mods.length,
+              number: (savegame.mods as Array<Mod>).length,
             })}
       </span>
       <span class="text-foreground">
@@ -72,7 +75,7 @@
       onclick={async () => {
         processingSavegames.add(savegame.id);
         try {
-          await syncSavegame(savegame, $t);
+          await syncSavegame(savegame as Savegame, $t);
         } catch (e) {
           console.error("Failed to sync savegame", e);
         } finally {

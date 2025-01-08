@@ -168,6 +168,20 @@
           <ModsTable />
         </Tabs.Content>
       </Tabs.Root>
+
+      <a
+        target="_blank"
+        class="relative mx-auto group"
+        href="https://ko-fi.com/eweren"
+        aria-label="Support me on Kofi"
+      >
+        <img
+          class="hover:animate-wiggle skew-x-[-5deg]"
+          width="200"
+          src="/support_me.png"
+          alt="Farming Simulator 25 Logo"
+        />
+      </a>
       <div class="h-12"></div>
       <button
         disabled={$gameStatus === GameStatus.RUNNING ||

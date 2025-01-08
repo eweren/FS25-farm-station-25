@@ -115,7 +115,7 @@ function getRandomEntries(array, x) {
 var worker_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const key = url.pathname.slice(1);
+    const key = url.pathname.slice(1).replace(/\%20/g, " ");
     const corsHeaders = {
       "Access-Control-Allow-Headers": "*",
       "Access-Control-Allow-Methods": "POST,PUT,GET,DELETE",
@@ -126,7 +126,7 @@ var worker_default = {
     const teamId = headers.get("teamId") || "asd";
     const { iC, p: players } = JSON.parse(await env.LS25DATA.get(teamId) ?? "{}");
     const throwIfUnauthenticated = /* @__PURE__ */ __name(() => {
-      console.log(teamId, iC);
+      console.log("TeamId and InviteCode", teamId, iC);
       if (iC == null) {
         return Response.json({ status: "error" }, {
           status: 401,
@@ -191,7 +191,7 @@ var worker_default = {
         if (key === "_playerStatus") {
           const body = await request.json();
 
-          let _players = players.split(",")
+          let _players = players.split(",").filter(p => p.trim().length > 0)
           console.log(_players);
 
           if (body.playing) {
@@ -282,6 +282,7 @@ var worker_default = {
         if (unauthRes) {
           return unauthRes;
         }
+        console.log("Get ", key);
         if (key.length === 0) {
           const options = { prefix: `${teamId}/savegames` };
           const { objects } = await env.LS25.list({ ...options, limit: 500, include: ["customMetadata"] });
@@ -325,8 +326,7 @@ var worker_default = {
             }
           });
         } else if (key === "_playerStatus") {
-          console.log(players);
-          return new Response(JSON.stringify(players?.split(",") ?? "[]"),
+          return new Response(JSON.stringify(players?.split(",").filter(p => p.trim().length > 0) ?? "[]"),
             {
               headers: {
                 "Content-type": "application/json",

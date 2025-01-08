@@ -5,7 +5,7 @@ import { convertXML } from 'simple-xml-to-json';
 import type { Config } from '../types/config';
 import type { ListObjectResponse } from '../types/listObjectResponse';
 import type { Savegame } from '../types/savegame';
-import { config, config as configStore, getTitleFromMod, localMods, localOnlyMods, localSavegames, localSavegames as localSavegamesStore, processingAllMods, processingMods, processingSavegames, remoteMods, remoteSavegames } from '../stores/savegames.store';
+import { config, config as configStore, getTitleFromMod, localMods, localOnlyMods, localSavegames, localSavegames as localSavegamesStore, processingAllMods, processingMods, processingSavegames, remoteMods, remoteOnlyMods, remoteSavegames } from '../stores/savegames.store';
 import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
@@ -79,6 +79,7 @@ export async function getSavegamesFromDir() {
           farms: [],
         } satisfies Savegame
       });
+
     careerSavegame.farms = await readFile(
       `${dir}/${savegame.name}/farms.xml`,
       {
@@ -152,7 +153,7 @@ export async function getLocalModForUpload(mod: Mod) {
   if (dir == null) {
     return;
   }
-  const fileContent = await readFile(`${dir}/mods/${mod.filename}`, {
+  const fileContent = await readFile(`${dir}/mods/${mod.filename ?? `${mod.modName}.zip`}`, {
     baseDir: BaseDirectory.Document,
   });
 
@@ -350,10 +351,13 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
       const remoteSavegameDate = new Date(remoteSavegame.savegameInfo.saveDate);
       const localSavegameDate = new Date(savegame.saveDate);
 
-      if (savegame.isRemote || remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime) {
+      const onlyRemoteMods = savegame.mods.filter(m => get(remoteOnlyMods).some(mod => m.filename === m.filename && m.version === mod.version));
+      const onlyLocalMods = savegame.mods.filter(m => get(localOnlyMods).some(mod => m.filename === m.filename && m.version === mod.version));
+
+      if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime || onlyRemoteMods.length > 0)) {
         await downloadSavegame(remoteSavegame.key, t);
         toast.success(t("sync_completed"));
-      } else if (remoteSavegameDate <= localSavegameDate && remoteSavegame.savegameInfo.playTime !== savegame.playTime) {
+      } else if (remoteSavegameDate < localSavegameDate || remoteSavegame.savegameInfo.playTime !== savegame.playTime || onlyLocalMods.length > 0) {
         await uploadSavegame(savegame, t);
         toast.success(t("sync_completed"));
       } else if (notifyOnMostRecent) {
@@ -363,7 +367,6 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
         })
         await saveConfig(get(config));
         toast.info(t("already_synced"));
-
       }
     } else {
       await uploadSavegame(savegame, t);
@@ -427,6 +430,7 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
       await remoteSavegames.current();
       processingSavegames.delete(saveGame.id);
       await deleteSavegameZip(saveGame.id);
+      await syncModsForSavegame(saveGame, t);
     } else {
       toast(t("error"), { duration: 5000 });
     }
@@ -474,6 +478,11 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
       const conf = get(config)
       conf.savegameMapping[saveGame] = saveGameKey;
       await saveConfig(conf);
+
+      const s = get(localSavegamesStore).find(s => s.id === saveGame);
+      if (s) {
+        await syncModsForSavegame(s, t);
+      }
     } else {
       toast(t("error"), { duration: 5000 });
     }
@@ -483,6 +492,40 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
     toast(t("error"), { duration: 5000 });
     console.error(e);
   }
+}
+
+/**
+ * Syncs all mods of a savegame with remote (either downloading or uploading)
+ * @param saveGame the (local) savegame
+ * @param t the t function from Tolgee
+ */
+export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<DefaultParamType, string, TranslationKey>) {
+
+  let toastNr;
+
+  if (saveGame) {
+    const onlyRemoteMods = saveGame.mods.filter(m => get(remoteOnlyMods).some(mod => m.filename === m.filename && m.version === mod.version));
+    const onlyLocalMods = saveGame.mods.filter(m => get(localOnlyMods).some(mod => m.filename === m.filename && m.version === mod.version));
+    if (onlyRemoteMods.length > 0) {
+      for (const mod of onlyRemoteMods) {
+        const remMod = get(remoteMods).get(mod.modName);
+        if (remMod?.remoteFileName) {
+          await downloadMod(remMod?.remoteFileName, mod, t);
+        } else {
+          setTimeout(() => {
+            toast.info(t("mod_not_found_remote", { mod: mod.modName }), { duration: 7000 });
+          }, 10);
+        }
+      }
+    }
+    if (onlyLocalMods.length > 0) {
+      for (const mod of onlyLocalMods) {
+        await uploadMod(mod, t);
+        toast.dismiss(toastNr);
+      }
+    }
+  }
+
 }
 
 export async function uploadAllMods(t: TFnType<DefaultParamType, string, TranslationKey>) {

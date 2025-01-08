@@ -4,5 +4,5 @@ export type ListObjectResponse = {
   key: string;
   size: number;
   uploaded: string;
-  savegameInfo: Savegame & { mods: number };
+  savegameInfo: Omit<Savegame, "mods"> & { mods: number };
 }

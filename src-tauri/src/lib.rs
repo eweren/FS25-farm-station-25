@@ -34,23 +34,21 @@ impl Into<JsonValue> for ModDesc {
     }
 }
 
-#[tauri::command]
-fn watch_farming_simulator_25(app: AppHandle) {
+#[tauri::command(async)]
+async fn watch_farming_simulator_25(app: AppHandle) {
     let app_handle = app.clone();
-    std::thread::spawn(move || {
-        check_process(&app_handle);
+    check_process(&app_handle);
 
-        loop {
-            if (unsafe { PROCESS_EXITED } == true) {
-                unsafe {
-                    PROCESS_EXITED = false;
-                }
-                break;
+    loop {
+        if (unsafe { PROCESS_EXITED } == true) {
+            unsafe {
+                PROCESS_EXITED = false;
             }
-            check_process(&app_handle);
-            std::thread::sleep(Duration::from_secs(1));
+            break;
         }
-    });
+        check_process(&app_handle);
+        std::thread::sleep(Duration::from_secs(1));
+    }
 }
 
 #[tauri::command]
@@ -284,7 +282,14 @@ fn check_process(app: &AppHandle) {
 }
 
 fn get_process_id(process_name: &str) -> Option<DWORD> {
-    let output = Command::new("tasklist")
+    let mut cmd = Command::new("tasklist");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW constant
+    }
+
+    let output = cmd
         .args(&["/FI", &format!("IMAGENAME eq {}", process_name)])
         .output()
         .ok()?;

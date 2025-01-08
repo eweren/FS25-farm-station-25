@@ -34,6 +34,7 @@
   "map": "Karte",
   "missing_fields": "Bitte überprüfe die Eingabefelder",
   "mod_name": "Mod",
+  "mod_not_found_remote": "Mod {mod} konnte nicht synchronisiert werden.",
   "mods": "Mods",
   "mods_no": "Mods: {number}",
   "mods_no_compare": "Mods: {local}/{number}",

@@ -1,8 +1,8 @@
 [package]
-name = "fs25-savegame-sync"
-version = "0.1.0"
-description = "A Tauri App"
-authors = ["you"]
+name = "farm-station-25"
+version = "0.1.2"
+description = "Farm Station 25 - Sync your savegames and mods with your friends"
+authors = ["Nico Hülscher"]
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,7 +11,7 @@ edition = "2021"
 # The `_lib` suffix may seem redundant but it is necessary
 # to make the lib name unique and wouldn't conflict with the bin name.
 # This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
-name = "fs25_savegame_sync_lib"
+name = "farm_station_25_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

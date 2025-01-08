@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    fs25_savegame_sync_lib::run()
+    farm_station_25_lib::run()
 }

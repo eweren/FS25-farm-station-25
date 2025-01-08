@@ -34,6 +34,7 @@
   "map": "Map",
   "missing_fields": "Please check the input fields",
   "mod_name": "Mod",
+  "mod_not_found_remote": "Mod {mod} could not be synchronized.",
   "mods": "Mods",
   "mods_no": "Mods: {number}",
   "mods_no_compare": "Mods: {local}/{number}",
