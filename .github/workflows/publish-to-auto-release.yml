@@ -98,7 +98,7 @@ jobs:
           name: artifacts-${{ matrix.os }}
           path: ${{ github.workspace }}/artifacts/*
 
-release:
+  release:
     needs: pre-release
     runs-on: ubuntu-latest
     steps:
