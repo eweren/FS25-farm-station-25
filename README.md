@@ -1,4 +1,4 @@
-[![publish](https://github.com/eweren/FS25-farm-sync-25/actions/workflows/publish-to-auto-release.yml/badge.svg)](https://github.com/eweren/FS25-farm-sync-25/actions/workflows/publish-to-auto-release.yml)
+[![publish](https://github.com/eweren/FS25-farm-station-25/actions/workflows/publish-to-auto-release.yml/badge.svg?branch=release)](https://github.com/eweren/FS25-farm-station-25/actions/workflows/publish-to-auto-release.yml)
 
 
 # Farming Simulator 2025 sync kit
@@ -8,19 +8,27 @@ It is a simple application that allows you to sync the game state between multip
 
 To set it up, you have to follow these steps:
 
-1. Download the latest release from the [releases page]() and extract it to a folder.
+1. Download the latest release from the [releases page](https://github.com/eweren/FS25-farm-station-25/releases) and install it on your machine.
 
 2. Run the application
 
-3. Add credentials for your Cloudflare worker (it's free) that is used to sync the game state. Follow the instruction here //todo
+3. Either join or create a new team 
 
-4. Share the setup link with your frinds. Your friends habe to download this app as well and can join your game by using the setup link.
-
-5. Start the game and enjoy playing with your friends!
+4. Start the game and enjoy playing with your friends!
 
 
 ## How it works
 
-The application uses a Cloudflare worker to sync the game state between the players. The worker is a simple JavaScript function that is executed on the Cloudflare edge servers. It is used to upload the game files (mods and savegames) to a Cloudflare R2 bucket (all for free) or download them to the players' machines.
+The application uses a Cloudflare worker to sync the game state between the players. The worker is a small webserver used to upload or download the savegames/mods and create or join a team. All assets are saved in a R2 bucket and the teams are saved in Cloudflare KV storage. It is not a highly secure solution, but probably the simplest way to get teams to work!
 
-You can choose which savegames you want to sync. When syncing the games state, mods will only be downloaded if they are not already present on the player's machine. This application won't delete any mods from your machine, so no savegame will be broken by using this application.
+You can choose which savegames and mods you want to sync. 
+When syncing a savegame, only those mods will be downloaded, that are not already present on the player's machine.
+This application won't delete any mods or savegame from your machine, so nothing will be broken by using this tool!
+
+## Contributing
+
+If you have any suggestions or improvements, feel free to open an issue or submit a pull request!
+
+## License
+
+This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for more details.
