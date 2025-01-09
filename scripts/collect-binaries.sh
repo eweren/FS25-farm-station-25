@@ -10,4 +10,4 @@ if [ ! -d artifacts ]; then
   mkdir artifacts
 fi
 
-mv src-tauri/target/x86_64-pc-windows-msvc/release/bundle/nsis/*.exe artifacts/
+mv src-tauri/target/release/bundle/nsis/*.exe artifacts/
