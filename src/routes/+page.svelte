@@ -26,7 +26,7 @@
   import OtherPlayersDialog from "../lib/ui/otherPlayersDialog.svelte";
   import { getLocalMods } from "../lib/sync/mods.sync";
   import { getSavegamesFromDir } from "../lib/sync/savegames.sync";
-  import { config } from "../lib/stores/config.store";
+  import { appVersion, config } from "../lib/stores/config.store";
   import { remoteMods } from "../lib/stores/savegamesAndMods.store";
 
   let loading = true;
@@ -315,15 +315,17 @@
     </span>
   {/if}
 
-  <button
-    class="absolute top-2 right-2"
-    onclick={() => location.reload()}
-    title={$t("reload")}
-    aria-label={$t("reload")}
-  >
-    <span class="solar--refresh-circle-linear -scale-100 hover:animate-spin"
-    ></span>
-  </button>
+  <div class="absolute top-2 right-2 text-xs flex items-center gap-2">
+    v{$appVersion}
+    <button
+      onclick={() => location.reload()}
+      title={$t("reload")}
+      aria-label={$t("reload")}
+    >
+      <span class="solar--refresh-circle-linear -scale-100 hover:animate-spin"
+      ></span>
+    </button>
+  </div>
   {#if $config.teamId}
     <button
       class="absolute top-2 left-2 px-2 py-1 flex items-center gap-2 text-sm"

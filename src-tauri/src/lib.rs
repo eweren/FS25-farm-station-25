@@ -34,6 +34,11 @@ impl Into<JsonValue> for ModDesc {
     }
 }
 
+#[tauri::command]
+fn get_version_number(app: AppHandle) -> JsonValue {
+    app.package_info().version.to_string().into()
+}
+
 #[tauri::command(async)]
 async fn watch_farming_simulator_25(app: AppHandle) {
     let app_handle = app.clone();
@@ -331,7 +336,8 @@ pub fn run() {
             convert_xml_to_json,
             read_file,
             read_mod_desc_files,
-            save_savegame
+            save_savegame,
+            get_version_number
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
