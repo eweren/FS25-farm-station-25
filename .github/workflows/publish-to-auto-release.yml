@@ -45,7 +45,8 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-            workspaces: "./core -> target"
+          workspaces: './src-tauri -> target'
+
       - name: Install bun
         uses: oven-sh/setup-bun@v2
 
