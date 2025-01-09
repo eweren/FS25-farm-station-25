@@ -4,18 +4,14 @@
   import SavegameTable from "../lib/ui/savegameTable.svelte";
   import {
     createTeam as createOrJoinTeam,
-    getLocalMods,
-    getSavegamesFromDir,
     loadConfig,
     saveConfig,
     startGame,
   } from "../lib/sync/utils";
   import {
-    config,
     localSavegames,
-    remoteMods,
     remoteSavegames,
-  } from "../lib/stores/savegames.store";
+  } from "../lib/stores/savegamesAndMods.store";
   import { getTolgee, getTranslate, T } from "@tolgee/svelte";
   import { GameStatus, gameStatus } from "../lib/stores/gameStatus.store";
   import { toast } from "svelte-sonner";
@@ -28,12 +24,16 @@
   import ExpandableInfoBox from "../lib/ui/expandableInfoBox.svelte";
   import { otherPlayers } from "../lib/stores/playersStatus.store";
   import OtherPlayersDialog from "../lib/ui/otherPlayersDialog.svelte";
+  import { getLocalMods } from "../lib/sync/mods.sync";
+  import { getSavegamesFromDir } from "../lib/sync/savegames.sync";
+  import { appVersion, config } from "../lib/stores/config.store";
+  import { remoteMods } from "../lib/stores/savegamesAndMods.store";
 
   let loading = true;
 
   onMount(async () => {
     localSavegames.set((await getSavegamesFromDir()) ?? []);
-    config.set(await loadConfig($localSavegames));
+    await loadConfig($localSavegames);
     await getLocalMods();
     loading = false;
     tolgee.subscribe((t) => {
@@ -47,7 +47,7 @@
   let showOtherPlayersDialog = false;
 
   $: {
-    if ($config.teamId != lastTeamId) {
+    if ($config.teamId != lastTeamId && $localSavegames != null) {
       lastTeamId = $config.teamId;
       if (lastTeamId) {
         remoteMods.current();
@@ -165,7 +165,13 @@
           </div>
         </Tabs.Content>
         <Tabs.Content value="mods">
-          <ModsTable />
+          {#if $localSavegames == null || $remoteSavegames == null}
+            <p>
+              <T keyName="savegames_loading" />
+            </p>
+          {:else}
+            <ModsTable />
+          {/if}
         </Tabs.Content>
       </Tabs.Root>
 
@@ -309,26 +315,27 @@
     </span>
   {/if}
 
-  <button
-    class="absolute top-2 right-2"
-    onclick={() => location.reload()}
-    title={$t("reload")}
-    aria-label={$t("reload")}
-  >
-    <span class="solar--refresh-circle-linear -scale-100 hover:animate-spin"
-    ></span>
-  </button>
+  <div class="absolute top-2 right-2 text-xs flex items-center gap-2">
+    v{$appVersion}
+    <button
+      onclick={() => location.reload()}
+      title={$t("reload")}
+      aria-label={$t("reload")}
+    >
+      <span class="solar--refresh-circle-linear -scale-100 hover:animate-spin"
+      ></span>
+    </button>
+  </div>
   {#if $config.teamId}
     <button
       class="absolute top-2 left-2 px-2 py-1 flex items-center gap-2 text-sm"
       onclick={() => {
-        config.update((c) => ({
-          ...c,
+        saveConfig({
+          ...$config,
           inviteCode: undefined,
           savegameMapping: {},
           teamId: undefined,
-        }));
-        saveConfig($config);
+        });
       }}
     >
       <span class="solar--logout-2-outline"></span>

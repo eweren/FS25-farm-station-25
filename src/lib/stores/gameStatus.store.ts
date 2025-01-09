@@ -1,10 +1,11 @@
 import { listen } from '@tauri-apps/api/event';
 import { writable, get } from "svelte/store";
-import { changePlayState, syncSavegame, watchFarmingSimulator } from '../sync/utils';
-import { processingSavegames, savegamesWithRemote } from './savegames.store';
+import { changePlayState, watchFarmingSimulator } from '../sync/utils';
+import { processingSavegames, savegamesWithRemote } from './savegamesAndMods.store';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
 import { getCurrentWindow, UserAttentionType } from '@tauri-apps/api/window';
 import { toast } from 'svelte-sonner';
+import { syncSavegame } from '../sync/savegames.sync';
 
 export enum GameStatus {
   RUNNING = "running",
@@ -72,4 +73,8 @@ const createGameStatusStore = () => {
   return state;
 }
 
+/**
+ * A store that holds the current status of the farming simulator. Listens to process status events from the rust
+ * backend.
+ */
 export const gameStatus = createGameStatusStore();

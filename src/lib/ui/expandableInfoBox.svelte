@@ -1,6 +1,5 @@
 <script lang="ts">
   import * as Alert from "$lib/components/ui/alert/index.js";
-  import { T } from "@tolgee/svelte";
 
   import { slide } from "svelte/transition";
 

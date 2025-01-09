@@ -14,4 +14,7 @@ const createOtherPlayersStore = () => {
   };
 }
 
+/**
+ * A store that holds the list of other players in the game.
+ */
 export const otherPlayers = createOtherPlayersStore();

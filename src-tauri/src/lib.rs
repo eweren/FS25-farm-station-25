@@ -34,6 +34,11 @@ impl Into<JsonValue> for ModDesc {
     }
 }
 
+#[tauri::command]
+fn get_version_number(app: AppHandle) -> JsonValue {
+    app.package_info().version.to_string().into()
+}
+
 #[tauri::command(async)]
 async fn watch_farming_simulator_25(app: AppHandle) {
     let app_handle = app.clone();
@@ -47,7 +52,7 @@ async fn watch_farming_simulator_25(app: AppHandle) {
             break;
         }
         check_process(&app_handle);
-        std::thread::sleep(Duration::from_secs(1));
+        std::thread::sleep(Duration::from_secs(3));
     }
 }
 
@@ -320,6 +325,8 @@ fn get_process_id(process_name: &str) -> Option<DWORD> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
@@ -329,7 +336,8 @@ pub fn run() {
             convert_xml_to_json,
             read_file,
             read_mod_desc_files,
-            save_savegame
+            save_savegame,
+            get_version_number
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
