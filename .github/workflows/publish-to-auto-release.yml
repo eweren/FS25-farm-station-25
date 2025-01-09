@@ -99,6 +99,8 @@ jobs:
           path: ${{ github.workspace }}/artifacts/*
 
   release:
+    permissions:
+      contents: write
     needs: pre-release
     runs-on: ubuntu-latest
     steps:
