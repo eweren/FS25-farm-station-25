@@ -45,10 +45,37 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      # - name: Azure Trusted Signing
+      #   uses: azure/trusted-signing-action@v0.3.16
+      #   with:
+      #     azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+      #     azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+      #     azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+      #     endpoint: ${{ secrets.AZURE_ENDPOINT }}
+      #     trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
+      #     certificate-profile-name: ${{ secrets.AZURE_CERT_PROFILE_NAME }}
+      #     files-folder: ./dummy
+      #     files-folder-filter: js
+      #     file-digest: SHA256
+      #     timestamp-rfc3161: http://timestamp.acs.microsoft.com
+      #     timestamp-digest: SHA256
+
+      # - name: Configure signing for tauri
+      #   shell: bash
+      #   env:
+      #     # This is used to sign the executable using the azure trusted signing before tauri build command.
+      #     BEFORE_BUNDLE_COMMAND: pwsh -command Invoke-TrustedSigning -Endpoint '${{ secrets.AZURE_ENDPOINT }}' -CodeSigningAccountName 'algokit-signing' -CertificateProfileName 'algokit' -FilesFolder '${{ github.workspace }}\src-tauri\target\release\deps\' -FilesFolderFilter 'exe' -FileDigest 'SHA256' -timeout '1200' -TimestampRfc3161 'http://timestamp.acs.microsoft.com' -TimestampDigest 'SHA256'
+      #   run: |
+      #     cd "$GITHUB_WORKSPACE"
+      #     cat './src-tauri/tauri.conf.json' | jq '.build += {"beforeBundleCommand": env.BEFORE_BUNDLE_COMMAND}' > './src-tauri/temp.json' && mv './src-tauri/temp.json' './src-tauri/tauri.conf.json'
 
       - uses: oven-sh/setup-bun@v2
       - name: install frontend dependencies
         run: bun install
+      - uses: johnyherangi/create-release-notes@main
+        id: create-release-notes
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - uses: tauri-apps/tauri-action@v0
         env:
@@ -56,11 +83,11 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: app-v__VERSION__ # the action automatically replaces \_\_VERSION\_\_ with the app version.
-          releaseName: "App v__VERSION__"
-          releaseBody: "See the assets to download this version and install."
-          releaseDraft: true
+          tagName: app-v__VERSION__
+          releaseName: "v__VERSION__"
+          releaseBody: ${{ steps.create-release-notes.outputs.release-notes }}
+          releaseDraft: false
           prerelease: false
-          args: ${{ matrix.args }}
+          args: ${{ matrix.args }} 
       - name: Run latest-tag
         uses: EndBug/latest-tag@latest
