@@ -17,6 +17,12 @@ To set it up, you have to follow these steps:
 4. Start the game and enjoy playing with your friends!
 
 
+[![screenshot](images/FS25_mods.png)]
+[![screenshot2](images/FS25_savegames.png)]
+
+
+
+
 ## How it works
 
 The application uses a Cloudflare worker to sync the game state between the players. The worker is a small webserver used to upload or download the savegames/mods and create or join a team. All assets are saved in a R2 bucket and the teams are saved in Cloudflare KV storage. It is not a highly secure solution, but probably the simplest way to get teams to work!
