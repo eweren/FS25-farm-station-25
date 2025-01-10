@@ -32,11 +32,9 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: Create release notes
-        uses: johnyherangi/create-release-notes@main
-        id: create-release-notes
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Build Changelog"
+        id: build_changelog
+        uses: mikepenz/release-changelog-builder-action@{latest-release}
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -66,7 +64,7 @@ jobs:
         with:
           tagName: app-v__VERSION__
           releaseName: "v__VERSION__"
-          releaseBody: ${{ steps.create-release-notes.outputs.release-notes }}
+          releaseBody: ${{ steps.build_changelog.outputs.changelog }}
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
