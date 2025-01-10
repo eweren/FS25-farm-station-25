@@ -36,7 +36,7 @@
       "icons/icon.ico"
     ],
     "windows": {
-      "signCommand": "trusted-signing-cli -e https://wus.codesigning.azure.net -a LILAGLASS -c FarmStation25 %1"
+      "signCommand": "trusted-signing-cli -e https://weu.codesigning.azure.net -a LILAGLASS -c FarmStation25 %1"
     },
     "macOS": {
       "dmg": {
