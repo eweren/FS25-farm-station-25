@@ -49,6 +49,11 @@ jobs:
       - name: install frontend dependencies
         run: bun install
 
+      - uses: johnyherangi/create-release-notes@main
+        id: create-release-notes
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
@@ -57,85 +62,40 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           includeRelease: false
+          tagName: v__VERSION__
+          releaseName: "v__VERSION__"
+          releaseBody: ${{ steps.create-release-notes.outputs.release-notes }}
+          releaseDraft: false
+          prerelease: false
           args: ${{ matrix.args }}
 
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Download Release Assets
+        uses: actions/download-release-asset@v1
         with:
-          name: unsigned-artifacts
-          path: src-tauri/target/release/bundle/**
+          repository: ${{ github.repository }}
+          release_id: ${{ steps.create-release-notes.outputs.release-id }}
+          asset_name: "*.exe"
+          download_path: ./release-artifacts
 
-  sign-and-release:
-    needs: pre-release
-    runs-on: windows-latest
-    steps:
-      - name: Download Artifacts
-        uses: actions/download-artifact@v4
+      - name: Sign executables
+        uses: trusted-setup/sign@v1
+        env:
+          SIGNING_CERTIFICATE: ${{ secrets.SIGNING_CERTIFICATE }}
+          SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.SIGNING_CERTIFICATE_PASSWORD }}
         with:
-          name: unsigned-artifacts
-          path: unsigned-artifacts
-        
-      - name: Sign Binaries with Trusted Signing
-        uses: azure/trusted-signing-action@v0.3.19
+          files: "./release-artifacts/**/*.exe"
+
+      - name: Upload signed executables
+        uses: actions/upload-artifact@v3
         with:
-          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          endpoint: ${{ secrets.AZURE_ENDPOINT }}
-          trusted-signing-account-name: ${{ secrets.AZURE_CODE_SIGNING_NAME }}
-          certificate-profile-name:  ${{ secrets.AZURE_CERT_PROFILE_NAME }}
-          files-folder: unsigned-artifacts
-          files-folder-depth: 7
-          files-folder-filter: exe
-          file-digest: SHA256
-          timestamp-rfc3161: http://timestamp.acs.microsoft.com
-          timestamp-digest: SHA256
+          name: signed-release-artifacts
+          path: ./release-artifacts
 
-      - name: Upload Signed Artifacts
-        uses: actions/upload-artifact@v4
+      - name: Replace Release Assets
+        uses: softprops/action-gh-release@v1
         with:
-          name: signed-artifacts
-          path: unsigned-artifacts
-
-  release:
-    permissions:
-      contents: write
-    needs: sign-and-release
-    runs-on: ubuntu-latest
-    steps:
-      - name: Github checkout
-        uses: actions/checkout@v4
-
-      - name: Tag Release
-        uses: jaywcjlove/create-tag-action@main
-        id: tag_release
-        with:
-          release: true
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            ${{ steps.changelog.outputs.compareurl }}
-            
-            ${{ steps.changelog.outputs.changelog }}
-
-      - name: Download Signed Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: signed-artifacts
-          path: signed-artifacts
-
-      - name: Generate Changelog
-        uses: jaywcjlove/changelog-generator@main
-        id: changelog
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Release App
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag_release.outputs.version }}
-          name: ${{ steps.tag_release.outputs.version }}
-          body: |
-            ${{ steps.changelog.outputs.compareurl }}
-
-            ${{ steps.changelog.outputs.changelog }}
-          files: signed-artifacts/**/*
+          tag_name: v__VERSION__
+          files: ./release-artifacts/**/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  

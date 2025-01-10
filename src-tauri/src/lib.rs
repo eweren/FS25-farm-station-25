@@ -16,7 +16,9 @@ use zip::{ZipArchive, ZipWriter};
 
 static mut PROCESS_EXITED: bool = false;
 static mut PROCESS_RUNNING: bool = false;
+
 static PROCESS_NAME: &str = "FarmingSimulator2025Game.exe";
+// Asserts default windows installation path 
 static PROCESS_PATH: &str =
     r"C:\Program Files (x86)\Farming Simulator 2025\FarmingSimulator2025.exe";
 
@@ -34,11 +36,13 @@ impl Into<JsonValue> for ModDesc {
     }
 }
 
+// Returns the version number from the cargo.toml
 #[tauri::command]
 fn get_version_number(app: AppHandle) -> JsonValue {
     app.package_info().version.to_string().into()
 }
 
+// Starts polling the FS25 process
 #[tauri::command(async)]
 async fn watch_farming_simulator_25(app: AppHandle) {
     let app_handle = app.clone();
@@ -56,6 +60,7 @@ async fn watch_farming_simulator_25(app: AppHandle) {
     }
 }
 
+// Starts FS25
 #[tauri::command]
 fn start_farming_simulator_25(app: AppHandle) {
     if let Some(_process_id) = get_process_id(PROCESS_NAME) {
@@ -68,6 +73,7 @@ fn start_farming_simulator_25(app: AppHandle) {
     app.emit("process-started", ()).unwrap();
 }
 
+// Takes an xml as string and converts it to json
 #[tauri::command]
 fn convert_xml_to_json(xml: &str) -> JsonValue {
     let json_builder = JsonBuilder::default();
@@ -80,8 +86,9 @@ fn convert_xml_to_json(xml: &str) -> JsonValue {
     }
 }
 
+// Reads the files at the specific path and creates a zip from it with filename.
 #[tauri::command]
-fn read_file(app: AppHandle, path: &str, filename: &str) -> JsonValue {
+fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValue {
     let doc_path = app
         .path()
         .resolve(path, BaseDirectory::Document)
@@ -100,9 +107,9 @@ fn read_file(app: AppHandle, path: &str, filename: &str) -> JsonValue {
     }
 }
 
-// data from frontend is ArrayBuffer
+// Saves a savegame (in zip format from server) to the given directory.
 #[tauri::command]
-fn save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonValue {
+fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonValue {
     let dir_path = app.path().resolve(dir, BaseDirectory::Document).unwrap();
 
     match unwrap_savegame(data, dir_path.as_path()) {
@@ -114,6 +121,7 @@ fn save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonValue {
     }
 }
 
+// Returns an array of metadata of all mods
 #[tauri::command]
 fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
     let binding = app_handle
@@ -125,7 +133,7 @@ fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
         .unwrap();
     let doc_path = binding.as_path();
     match parse_mod_desc_files(doc_path) {
-        Ok(json_str) => json_str.into(),
+        Ok(mods) => mods.into(),
         Err(e) => {
             eprintln!("Error building JSON from XML: {}", e);
             return JsonValue::Null;
@@ -133,6 +141,7 @@ fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
     }
 }
 
+// Parses all mod description files.
 fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
     let files = get_zip_file_paths(folder);
 
@@ -178,6 +187,7 @@ fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
     return Ok(JsonValue::Array(mods));
 }
 
+// Returns all files within a zip folder.
 fn get_zip_file_paths(folder: &Path) -> Vec<PathBuf> {
     let mut zip_paths = Vec::new();
     if folder.is_dir() {
@@ -192,6 +202,7 @@ fn get_zip_file_paths(folder: &Path) -> Vec<PathBuf> {
     zip_paths
 }
 
+// Creates a zip archive of all files within path.
 fn create_zip_archive(path: PathBuf, output_path: PathBuf) -> Result<JsonValue, Box<dyn Error>> {
     println!("output_path {:?}", output_path);
     println!("path {:?}", &path);
@@ -222,6 +233,7 @@ fn create_zip_archive(path: PathBuf, output_path: PathBuf) -> Result<JsonValue, 
     Ok(JsonValue::String(pth_str.to_string()))
 }
 
+// Unwraps a savegame to dest_path
 fn unwrap_savegame(zip_bytes: Vec<u8>, dest_path: &Path) -> Result<JsonValue, Box<dyn Error>> {
     let reader = Cursor::new(zip_bytes);
     let mut archive = ZipArchive::new(reader)?;
@@ -334,9 +346,9 @@ pub fn run() {
             watch_farming_simulator_25,
             start_farming_simulator_25,
             convert_xml_to_json,
-            read_file,
+            read_files_as_zip,
             read_mod_desc_files,
-            save_savegame,
+            unwrap_and_save_savegame,
             get_version_number
         ])
         .run(tauri::generate_context!())

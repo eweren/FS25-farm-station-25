@@ -50,7 +50,7 @@ export async function getSavegameFilesForUpload(saveGame: string) {
     return;
   }
 
-  await invoke("read_file", {
+  await invoke("read_files_as_zip", {
     filename: saveGame,
     path: dir
   }) as string;
@@ -304,7 +304,7 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
     }
     const saveGame = id ?? `savegame${Math.max(...get(localSavegames).map(s => parseInt(s.id.replace("savegame", ""))), 0) + 1}`;
 
-    const x = await invoke("save_savegame", { data, dir: `${dir}/${saveGame}` });
+    const x = await invoke("unwrap_and_save_savegame", { data, dir: `${dir}/${saveGame}` });
 
     if (x) {
       localSavegamesStore.set(await getSavegamesFromDir() ?? get(localSavegames));
