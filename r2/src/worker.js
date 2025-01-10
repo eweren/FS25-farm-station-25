@@ -1,6 +1,7 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
+/** Array of random farming related words */
 const landwirtschaftArray = [
   "Traktor",
   "Ernte",
@@ -106,12 +107,28 @@ const landwirtschaftArray = [
   "Feldmaus",
   "Wühlmaus"
 ];
+
+/** Return x random entries of an array. */
 function getRandomEntries(array, x) {
   const shuffled = array.sort(() => 0.5 - Math.random());
   return shuffled.slice(0, x);
 }
 
-// src/worker.js
+/**
+ * The actual server. It's pretty basic. The server is actually just checking if needed headers are present, and returns
+ * results based on the HTTP method.
+ * 
+ * On POST, it will either set the playing status of a player or create or validate a team.
+ * 
+ * On GET, it will either return the playing players of the team, a list of all savegames or mods or a specific savegame
+ * or mod for download (from R2).
+ * 
+ * On PUT, it will save the given mod or savegame to R2.
+ * 
+ * On DELETE, it will delete the file at the given path on R2.
+ * 
+ * On OPTIONS, it will return the CORS headers.
+ */
 var worker_default = {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -358,6 +375,15 @@ var worker_default = {
         const throwIfUnauthRes = throwIfUnauthenticated();
         if (throwIfUnauthRes) {
           return throwIfUnauthRes;
+        }
+        if (!key.includes(teamId)) {
+          return Response.json({ status: "error" }, {
+            status: 401,
+            headers: {
+              "Content-type": "application/json",
+              ...corsHeaders
+            }
+          });
         }
         await env.LS25.delete(key);
         return new Response("Deleted!", {
