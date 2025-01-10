@@ -32,6 +32,12 @@ jobs:
         with:
           node-version: lts/*
 
+      - name: Create release notes
+        uses: johnyherangi/create-release-notes@main
+        id: create-release-notes
+        env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -43,13 +49,6 @@ jobs:
 
       - name: Install frontend dependencies
         run: bun install
-
-      - name: Create release notes
-        uses: johnyherangi/create-release-notes@main
-        id: create-release-notes
-        env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       
       - name: Install trusted-signing-cli
         if: matrix.platform == 'windows-latest'
