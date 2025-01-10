@@ -1,13 +1,20 @@
 import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
+import { toast } from 'svelte-sonner';
+import type { TFnType, DefaultParamType, TranslationKey } from '@tolgee/svelte';
 
-export const updateApp = async () => {
+export const updateApp = async (t: TFnType<DefaultParamType, string, TranslationKey>) => {
   const update = await check();
   if (update) {
-    console.log(
-      `found update ${update.version} from ${update.date} with notes ${update.body}`
-    );
-    debugger
+
+    toast.info(t('update_found', {
+      version: update.version,
+      date: update.date,
+      notes: update.body
+    }), {
+      duration: 5000
+    });
+
     let downloaded = 0;
     let contentLength = 0;
     // alternatively we could also call update.download() and update.install() separately
@@ -27,7 +34,17 @@ export const updateApp = async () => {
       }
     });
 
-    console.log('update installed');
-    await relaunch();
+    toast.info(t('update_success_restart'), {
+      duration: undefined,
+      action: {
+        label: t("update_success_restart_btn"),
+        onClick: async () => {
+          await relaunch();
+        }
+      },
+      cancel: {
+        label: t("update_success_restart_cancel")
+      }
+    });
   }
 }
