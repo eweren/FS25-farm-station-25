@@ -61,7 +61,7 @@ jobs:
       
       - name: Install trusted-signing-cli
         if: matrix.platform == 'windows-latest'
-        run: cargo install trusted-signing-cli
+        run: cargo install trusted-signing-cli --force
 
       - name: Build App
         uses: tauri-apps/tauri-action@v0
