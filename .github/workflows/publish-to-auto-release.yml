@@ -36,6 +36,17 @@ jobs:
         id: build_changelog
         uses: mikepenz/release-changelog-builder-action@v5
 
+      - name: Setup cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
