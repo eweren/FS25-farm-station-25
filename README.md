@@ -16,12 +16,9 @@ To set it up, you have to follow these steps:
 
 4. Start the game and enjoy playing with your friends!
 
-
-[![screenshot](images/FS25_mods.png)]
-[![screenshot2](images/FS25_savegames.png)]
-
-
-
+Savegames                |  Mods
+:-------------------------:|:-------------------------:
+![screenshot2](images/FS25_savegames.png)  |  ![screenshot](images/FS25_mods.png)
 
 ## How it works
 
