@@ -154,7 +154,7 @@
 .text-default {
   color: hsl(var(--foreground));
 }
-button.btn-primary {
+.btn-primary {
   border-radius: 8px;
   border: 1px solid transparent;
   padding: 0.6em 1.2em;
@@ -172,7 +172,7 @@ button.btn-primary {
   outline: 2px solid transparent;
   transform: skewX(-5deg);
 }
-button.btn-primary.outline {
+.btn-primary.outline {
   background-color: transparent;
   border: 4px solid var(--fs-color-primary);
   color: var(--foreground);
@@ -180,17 +180,17 @@ button.btn-primary.outline {
 input {
   transform: skewX(-5deg);outline-color: var(--fs-color-primary-light) !important;
 }
-button.btn-primary:active {
+.btn-primary:active {
   filter: brightness(0.9);
   border: 4px solid var(--fs-color-primary-light);
   outline: 4px solid var(--fs-color-dark);
 }
-button.btn-primary:hover {
+.btn-primary:hover {
   filter: brightness(1.1);
   border: 4px solid var(--fs-color-primary-light);
   outline: 4px solid var(--fs-color-dark);
 }
-button.btn-primary:disabled {
+.btn-primary:disabled {
   background-color: hsl(var(--muted));
   border: 4px solid transparent;
   cursor: not-allowed;

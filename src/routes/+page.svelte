@@ -75,6 +75,15 @@
     alt="Farming Simulator 25 Logo"
     class="logo"
   />
+  <a
+    target="_blank"
+    class="relative btn-primary flex self-center justify-start gap-2 hover:animate-wiggle skew-x-[-5deg]"
+    href="https://ko-fi.com/eweren"
+    aria-label="Support me on Kofi"
+  >
+    <img class="h-6" src="/kofi_symbol.png" alt="Farming Simulator 25 Logo" />
+    <T keyName="support_us" />
+  </a>
 
   {#if $config.teamId != null}
     {#if $config.name == null || showName}
@@ -175,19 +184,6 @@
         </Tabs.Content>
       </Tabs.Root>
 
-      <a
-        target="_blank"
-        class="relative mx-auto group"
-        href="https://ko-fi.com/eweren"
-        aria-label="Support me on Kofi"
-      >
-        <img
-          class="hover:animate-wiggle skew-x-[-5deg]"
-          width="200"
-          src="/support_me.png"
-          alt="Farming Simulator 25 Logo"
-        />
-      </a>
       <div class="h-12"></div>
       <button
         disabled={$gameStatus === GameStatus.RUNNING ||
@@ -373,7 +369,7 @@
   }
 
   .logo {
-    margin: 2rem auto 1rem;
+    margin: 0 auto 1rem;
     display: block;
   }
 

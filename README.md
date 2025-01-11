@@ -1,5 +1,8 @@
 [![publish](https://github.com/eweren/FS25-farm-station-25/actions/workflows/publish-to-auto-release.yml/badge.svg?branch=release)](https://github.com/eweren/FS25-farm-station-25/actions/workflows/publish-to-auto-release.yml)
 
+<a href="https://ko-fi.com/eweren"><img src="images/support_me.png" height="34" ></a>
+
+
 
 # Farming Simulator 2025 sync kit
 
@@ -18,7 +21,7 @@ To set it up, you have to follow these steps:
 
 Savegames                |  Mods
 :-------------------------:|:-------------------------:
-![screenshot2](images/FS25_savegames.png)  |  ![screenshot](images/FS25_mods.png)
+<img src="images/FS25_savegames.png" width="400" > |  <img src="images/FS25_mods.png" width="400" >
 
 ## How it works
 
