@@ -28,6 +28,7 @@
   import { getSavegamesFromDir } from "../lib/sync/savegames.sync";
   import { appVersion, config } from "../lib/stores/config.store";
   import { remoteMods } from "../lib/stores/savegamesAndMods.store";
+  import { enable, isEnabled, disable } from "@tauri-apps/plugin-autostart";
 
   let loading = true;
 
@@ -41,6 +42,7 @@
     });
     const window = new Window("main");
     window.setTitle($t("window_title"));
+    autostartEnabled = await isEnabled();
   });
 
   let lastTeamId: string | undefined;
@@ -66,6 +68,16 @@
 
   let showInviteCode = false;
   let showName = false;
+  let autostartEnabled = false;
+
+  const toggleAutostart = async () => {
+    if (autostartEnabled) {
+      await disable();
+    } else {
+      await enable();
+    }
+    autostartEnabled = !autostartEnabled;
+  };
 </script>
 
 <main class="container">
@@ -76,8 +88,8 @@
     class="logo"
   />
 
-  {#if $config.teamId != null}
-    {#if $config.name == null || showName}
+  {#if $config.teamId == null}
+    {#if $config.name != null || showName}
       <form
         class="flex-1 flex flex-col gap-4"
         onsubmit={async (e) => {

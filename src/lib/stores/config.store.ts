@@ -11,7 +11,6 @@ export const config = writable<Config>({
 const createAppVersion = () => {
   const appVersion = writable<string>()
   invoke('get_version_number').then((version) => {
-    console.log(typeof version);
     if (typeof version === "string") {
       appVersion.set(version);
     }

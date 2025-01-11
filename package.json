@@ -16,6 +16,7 @@
     "@aws-sdk/client-s3": "^3.722.0",
     "@aws-sdk/s3-request-presigner": "^3.722.0",
     "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-autostart": "~2",
     "@tauri-apps/plugin-dialog": "~2",
     "@tauri-apps/plugin-fs": "~2",
     "@tauri-apps/plugin-opener": "^2",

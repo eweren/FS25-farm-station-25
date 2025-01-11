@@ -4,19 +4,33 @@ use std::error::Error;
 use std::fs::{self, File};
 use std::io::{self, prelude::*, BufReader, Cursor, Write};
 use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::time::Duration;
 use tauri::path::BaseDirectory;
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Manager};
+use tauri_plugin_autostart::MacosLauncher;
 use walkdir::WalkDir;
+
+#[cfg(windows)]
+use std::process::Command;
+#[cfg(windows)]
+use std::time::Duration;
+#[cfg(windows)]
+use tauri::Emitter;
+#[cfg(windows)]
 use winapi::shared::minwindef::DWORD;
+
 use xml2json_rs::JsonBuilder;
 use zip::write::FileOptions;
 use zip::{ZipArchive, ZipWriter};
 
+#[cfg(windows)]
 static mut PROCESS_EXITED: bool = false;
+#[cfg(windows)]
 static mut PROCESS_RUNNING: bool = false;
+
+#[cfg(windows)]
 static PROCESS_NAME: &str = "FarmingSimulator2025Game.exe";
+// Asserts default windows installation path
+#[cfg(windows)]
 static PROCESS_PATH: &str =
     r"C:\Program Files (x86)\Farming Simulator 2025\FarmingSimulator2025.exe";
 
@@ -40,6 +54,7 @@ fn get_version_number(app: AppHandle) -> JsonValue {
 }
 
 #[tauri::command(async)]
+#[cfg(windows)]
 async fn watch_farming_simulator_25(app: AppHandle) {
     let app_handle = app.clone();
     check_process(&app_handle);
@@ -57,6 +72,7 @@ async fn watch_farming_simulator_25(app: AppHandle) {
 }
 
 #[tauri::command]
+#[cfg(windows)]
 fn start_farming_simulator_25(app: AppHandle) {
     if let Some(_process_id) = get_process_id(PROCESS_NAME) {
         return;
@@ -266,6 +282,7 @@ fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> {
     return Some("".to_string());
 }
 
+#[cfg(windows)]
 fn check_process(app: &AppHandle) {
     if let Some(_process_id) = get_process_id(PROCESS_NAME) {
         unsafe {
@@ -286,14 +303,11 @@ fn check_process(app: &AppHandle) {
     }
 }
 
+#[cfg(windows)]
 fn get_process_id(process_name: &str) -> Option<DWORD> {
     let mut cmd = Command::new("tasklist");
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW constant
-    }
-
+    use std::os::windows::process::CommandExt;
+    cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW constant
     let output = cmd
         .args(&["/FI", &format!("IMAGENAME eq {}", process_name)])
         .output()
@@ -325,13 +339,19 @@ fn get_process_id(process_name: &str) -> Option<DWORD> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
+            #[cfg(windows)]
             watch_farming_simulator_25,
+            #[cfg(windows)]
             start_farming_simulator_25,
             convert_xml_to_json,
             read_file,

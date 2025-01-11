@@ -33,5 +33,6 @@ tauri-plugin-process = "2"
 winapi = { version = "0.3", features = ["winuser", "handleapi", "processthreadsapi", "winbase", "synchapi"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-autostart = "2"
 tauri-plugin-updater = "2"
 
