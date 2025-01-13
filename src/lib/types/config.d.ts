@@ -4,4 +4,5 @@ export interface Config {
   teamId?: string;
   inviteCode?: string;
   name?: string;
+  lang?: string;
 }

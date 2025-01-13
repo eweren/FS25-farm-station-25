@@ -29,6 +29,7 @@
   import { appVersion, config } from "../lib/stores/config.store";
   import { remoteMods } from "../lib/stores/savegamesAndMods.store";
   import { error } from "@tauri-apps/plugin-log";
+  import LanguageSwitch from "../lib/ui/languageSwitch.svelte";
 
   let loading = true;
 
@@ -36,16 +37,26 @@
     try {
       const savegames = (await getSavegamesFromDir()) ?? [];
       localSavegames.set(savegames);
+      throw new Error("Test error");
     } catch (e) {
-      toast.error($t("savegames_loading_error"));
+      toast.error($t("savegames_loading_error"), {
+        duration: 20000,
+        dismissable: false,
+        cancel: {
+          label: $t("copy_path"),
+          onClick: () => {
+            navigator.clipboard
+              .writeText("%LocalAppData%\\de.farm-station-25.app\\logs")
+              .then(() => {
+                toast.success($t("copied"), {
+                  duration: 2000,
+                });
+              });
+            toast.dismiss();
+          },
+        },
+      });
       error(`Error loading local savegames from dir ${e}`);
-    }
-
-    try {
-      await loadConfig($localSavegames);
-    } catch (e) {
-      toast.error($t("config_loading_error"));
-      error(`Error loading config from dir ${e}`);
     }
 
     try {
@@ -331,6 +342,8 @@
   {/if}
 
   <div class="absolute top-2 right-2 text-xs flex items-center gap-2">
+    <LanguageSwitch />
+
     v{$appVersion}
     <button
       onclick={() => location.reload()}

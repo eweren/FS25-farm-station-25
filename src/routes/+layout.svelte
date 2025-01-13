@@ -11,6 +11,10 @@
 	import { cachedT } from "../lib/stores/gameStatus.store";
 	import { onMount } from "svelte";
 	import { updateApp } from "../lib/updater";
+	import { toast } from "svelte-sonner";
+	import { localSavegames } from "../lib/stores/savegamesAndMods.store";
+	import { loadConfig } from "../lib/sync/utils";
+	import { error } from "@tauri-apps/plugin-log";
 
 	let { children } = $props();
 
@@ -35,7 +39,15 @@
 				const newIsDark = e.matches;
 				setTheme(newIsDark);
 			});
-		await updateApp();
+
+		try {
+			await loadConfig($localSavegames);
+		} catch (e) {
+			toast.error(tolgee.t("config_loading_error"));
+			error(`Error loading config from dir ${e}`);
+		}
+
+		await updateApp(tolgee.t);
 	});
 
 	const setTheme = (isDark: boolean) => {
