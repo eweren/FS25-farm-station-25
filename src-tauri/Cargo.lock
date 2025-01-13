@@ -1233,6 +1233,7 @@ dependencies = [
 name = "farm-station-25"
 version = "0.1.10"
 dependencies = [
+ "log",
  "regex",
  "serde",
  "serde_json",

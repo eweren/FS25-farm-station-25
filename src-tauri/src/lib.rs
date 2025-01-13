@@ -47,6 +47,7 @@ fn get_version_number(app: AppHandle) -> JsonValue {
 // Starts polling the FS25 process
 #[tauri::command(async)]
 async fn watch_farming_simulator_25(app: AppHandle) {
+    log::info!("watch_farming_simulator_25");
     let app_handle = app.clone();
     check_process(&app_handle);
 
@@ -65,6 +66,7 @@ async fn watch_farming_simulator_25(app: AppHandle) {
 // Starts FS25
 #[tauri::command]
 fn start_farming_simulator_25(app: AppHandle) {
+    log::info!("start_farming_simulator_25");
     if let Some(_process_id) = get_process_id(PROCESS_NAME) {
         return;
     }
@@ -75,7 +77,7 @@ fn start_farming_simulator_25(app: AppHandle) {
     match app.emit("process-started", ()) {
         Ok(_) => {}
         Err(e) => {
-            eprintln!("Error emitting process-started event: {}", e);
+            log::error!("Error emitting process-started event: {}", e);
         }
     };
 }
@@ -83,10 +85,12 @@ fn start_farming_simulator_25(app: AppHandle) {
 // Reads the My Games/FarmingSimulator25 folder from the documents dir
 #[tauri::command]
 fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
+    log::info!("get_folder_content {}", dir);
+
     let path = match app.path().resolve(dir, BaseDirectory::Document) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Error resolving path: {}", e);
+            log::error!("Error resolving path: {}", e);
 
             return JsonValue::Null;
         }
@@ -120,11 +124,12 @@ fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
 // Takes an xml as string and converts it to json
 #[tauri::command]
 fn convert_xml_to_json(xml: &str) -> JsonValue {
+    log::info!("convert_xml_to_json");
     let json_builder = JsonBuilder::default();
     match json_builder.build_from_xml(xml) {
         Ok(json_str) => json_str.into(),
         Err(e) => {
-            eprintln!("Error building JSON from XML: {}", e);
+            log::error!("Error building JSON from XML: {}", e);
             return JsonValue::Null;
         }
     }
@@ -133,12 +138,14 @@ fn convert_xml_to_json(xml: &str) -> JsonValue {
 // Reads the files at the specific path and creates a zip from it with filename.
 #[tauri::command]
 fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValue {
+    log::info!("read_files_as_zip {:?} {:?}", path, filename);
     let doc_path = match app.path().resolve(path, BaseDirectory::Document) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!(
+            log::error!(
                 "Error reading the files at the specified path {}: {}",
-                path, e
+                path,
+                e
             );
             return JsonValue::Null;
         }
@@ -151,7 +158,7 @@ fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValue {
     {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Error creating a zip path in AppLocalData: {}", e);
+            log::error!("Error creating a zip path in AppLocalData: {}", e);
             return JsonValue::Null;
         }
     };
@@ -159,7 +166,7 @@ fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValue {
     match create_zip_archive(doc_path, file_path) {
         Ok(json_str) => json_str.into(),
         Err(e) => {
-            eprintln!("Error creating zip archive: {}", e);
+            log::error!("Error creating zip archive: {}", e);
             return JsonValue::Null;
         }
     }
@@ -168,10 +175,12 @@ fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValue {
 // Saves a savegame (in zip format from server) to the given directory.
 #[tauri::command]
 fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonValue {
+    log::info!("unwrap_and_save_savegame {:?}", dir);
+
     let dir_path = match app.path().resolve(dir, BaseDirectory::Document) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("Error creating zip archive: {}", e);
+            log::error!("Error creating zip archive: {}", e);
             return JsonValue::Null;
         }
     };
@@ -179,7 +188,7 @@ fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonVal
     match unwrap_savegame(data, dir_path.as_path()) {
         Ok(bool) => bool.into(),
         Err(e) => {
-            eprintln!("Error creating zip archive: {}", e);
+            log::error!("Error creating zip archive: {}", e);
             return JsonValue::Null;
         }
     }
@@ -188,13 +197,15 @@ fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonVal
 // Returns an array of metadata of all mods
 #[tauri::command]
 fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
+    log::info!("read_mod_desc_files");
+
     let binding = match app_handle.path().resolve(
         "My Games/FarmingSimulator2025/mods",
         BaseDirectory::Document,
     ) {
         Ok(bool) => bool,
         Err(e) => {
-            eprintln!("Error creating zip archive: {}", e);
+            log::error!("Error creating zip archive: {}", e);
             return JsonValue::Null;
         }
     };
@@ -203,7 +214,7 @@ fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
     match parse_mod_desc_files(doc_path) {
         Ok(mods) => mods.into(),
         Err(e) => {
-            eprintln!("Error building JSON from XML: {}", e);
+            log::error!("Error building JSON from XML: {}", e);
             return JsonValue::Null;
         }
     }
@@ -211,6 +222,8 @@ fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
 
 // Parses all mod description files.
 fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
+    log::info!("parse_mod_desc_files {:?}", folder);
+
     let files = get_zip_file_paths(folder);
 
     let mut mods: Vec<JsonValue> = vec![];
@@ -234,7 +247,7 @@ fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
         let titles = match json.get("modDesc").and_then(|md| md.get("title")) {
             Some(title) => title.clone(),
             None => {
-                eprintln!("Error: title not found in modDesc");
+                log::error!("Error: title not found in modDesc");
                 return Err(JsonValue::Null);
             }
         };
@@ -247,12 +260,12 @@ fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
                 Some(version) => match version.as_array() {
                     Some(array) => array[0].to_string().replace('"', ""),
                     None => {
-                        eprintln!("Error: version is not an array");
+                        log::error!("Error: version is not an array");
                         return Err(JsonValue::Null);
                     }
                 },
                 None => {
-                    eprintln!("Error: version not found in modDesc");
+                    log::error!("Error: version not found in modDesc");
                     return Err(JsonValue::Null);
                 }
             },
@@ -260,7 +273,7 @@ fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
         match serde_json::to_value(r#mod) {
             Ok(mod_json) => mods.push(mod_json),
             Err(e) => {
-                eprintln!("Error serializing mod: {}", e);
+                log::error!("Error serializing mod: {}", e);
                 return Err(JsonValue::Null);
             }
         }
@@ -270,6 +283,7 @@ fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
 
 // Returns all files within a zip folder.
 fn get_zip_file_paths(folder: &Path) -> Vec<PathBuf> {
+    log::info!("get_zip_file_paths {:?}", folder);
     let mut zip_paths = Vec::new();
     if folder.is_dir() {
         match fs::read_dir(folder) {
@@ -284,11 +298,11 @@ fn get_zip_file_paths(folder: &Path) -> Vec<PathBuf> {
                                 zip_paths.push(path);
                             }
                         }
-                        Err(e) => eprintln!("Error reading entry: {}", e),
+                        Err(e) => log::error!("Error reading entry: {}", e),
                     }
                 }
             }
-            Err(e) => eprintln!("Error reading directory: {}", e),
+            Err(e) => log::error!("Error reading directory: {}", e),
         }
     }
     zip_paths
@@ -296,17 +310,13 @@ fn get_zip_file_paths(folder: &Path) -> Vec<PathBuf> {
 
 // Creates a zip archive of all files within path.
 fn create_zip_archive(path: PathBuf, output_path: PathBuf) -> Result<JsonValue, Box<dyn Error>> {
-    println!("output_path {:?}", output_path);
-    println!("path {:?}", &path);
+    log::info!("create_zip_archive {:?} {:?}", path, output_path);
     let file = std::fs::File::create(&output_path)?;
-    println!("file");
     let mut zip_writer = ZipWriter::new(file);
-    println!("zip");
 
     let options = FileOptions::<()>::default()
         .compression_method(zip::CompressionMethod::Zstd)
         .unix_permissions(0o755);
-    println!("options");
 
     for entry in WalkDir::new(&path) {
         let entry = entry?;
@@ -315,22 +325,22 @@ fn create_zip_archive(path: PathBuf, output_path: PathBuf) -> Result<JsonValue, 
             let relative_path = match entry_path.strip_prefix(&path) {
                 Ok(path) => path,
                 Err(e) => {
-                    eprintln!("Error stripping prefix: {}", e);
+                    log::error!("Error stripping prefix: {}", e);
                     continue;
                 }
             };
-            println!("entry {:?}", relative_path);
+            log::info!("entry {:?}", relative_path);
             match zip_writer.start_file(relative_path.to_str().unwrap(), options) {
                 Ok(_) => (),
                 Err(e) => {
-                    eprintln!("Error starting file in zip: {}", e);
+                    log::error!("Error starting file in zip: {}", e);
                     continue;
                 }
             }
             match zip_writer.write_all(&std::fs::read(entry_path)?) {
                 Ok(_) => (),
                 Err(e) => {
-                    eprintln!("Error writing file to zip: {}", e);
+                    log::error!("Error writing file to zip: {}", e);
                     continue;
                 }
             }
@@ -339,12 +349,14 @@ fn create_zip_archive(path: PathBuf, output_path: PathBuf) -> Result<JsonValue, 
 
     zip_writer.finish()?;
     let pth_str = &output_path.clone().to_string_lossy().into_owned();
-    println!("Created ZIP archive: {:?}", pth_str);
+    log::info!("Created ZIP archive: {:?}", pth_str);
     Ok(JsonValue::String(pth_str.to_string()))
 }
 
 // Unwraps a savegame to dest_path
 fn unwrap_savegame(zip_bytes: Vec<u8>, dest_path: &Path) -> Result<JsonValue, Box<dyn Error>> {
+    log::info!("unwrap_savegame {:?}", dest_path);
+
     let reader = Cursor::new(zip_bytes);
     let mut archive = ZipArchive::new(reader)?;
 
@@ -371,10 +383,12 @@ fn unwrap_savegame(zip_bytes: Vec<u8>, dest_path: &Path) -> Result<JsonValue, Bo
 }
 
 fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> {
+    log::info!("read_file_in_zip {:?} {:?}", path_to_zip, filename);
+
     let file = match File::open(&path_to_zip) {
         Ok(file) => file,
         Err(e) => {
-            eprintln!("Error opening zip file: {}", e);
+            log::error!("Error opening zip file: {}", e);
             return None;
         }
     };
@@ -382,7 +396,7 @@ fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> {
     let mut archive = match ZipArchive::new(BufReader::new(file)) {
         Ok(archive) => archive,
         Err(e) => {
-            eprintln!("Error reading zip archive: {}", e);
+            log::error!("Error reading zip archive: {}", e);
             return None;
         }
     };
@@ -391,7 +405,7 @@ fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> {
         let mut file = match archive.by_index(i) {
             Ok(file) => file,
             Err(e) => {
-                eprintln!("Error accessing file in zip archive: {}", e);
+                log::error!("Error accessing file in zip archive: {}", e);
                 continue;
             }
         };
@@ -400,7 +414,7 @@ fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> {
             if name.to_str() == Some(filename) {
                 let mut contents = String::new();
                 if let Err(e) = file.read_to_string(&mut contents) {
-                    eprintln!("Error reading file content: {}", e);
+                    log::error!("Error reading file content: {}", e);
                     return None;
                 }
                 return Some(contents);
@@ -417,13 +431,13 @@ fn check_process(app: &AppHandle) {
         }
         match app.emit("process-running", ()) {
             Ok(_) => (),
-            Err(e) => eprintln!("Error emitting process-running event: {}", e),
+            Err(e) => log::error!("Error emitting process-running event: {}", e),
         }
     } else {
         if unsafe { PROCESS_RUNNING } == true {
             match app.emit("process-exited", ()) {
                 Ok(_) => (),
-                Err(e) => eprintln!("Error emitting process-exited event: {}", e),
+                Err(e) => log::error!("Error emitting process-exited event: {}", e),
             }
             unsafe {
                 PROCESS_EXITED = true;
@@ -434,7 +448,7 @@ fn check_process(app: &AppHandle) {
         }
         match app.emit("process-not-running", ()) {
             Ok(_) => (),
-            Err(e) => eprintln!("Error emitting process-not-running event: {}", e),
+            Err(e) => log::error!("Error emitting process-not-running event: {}", e),
         }
     }
 }
@@ -495,6 +509,8 @@ pub fn run() {
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
         .plugin(
             tauri_plugin_log::Builder::new()
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .max_file_size(50_000 /* bytes */)
                 .target(tauri_plugin_log::Target::new(
                     tauri_plugin_log::TargetKind::LogDir {
                         file_name: Some("logs".to_string()),

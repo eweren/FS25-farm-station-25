@@ -31,6 +31,7 @@ tauri-plugin-process = "2"
 tauri-plugin-log = "2"
 regex = "1.11.1"
 tauri-plugin-sentry = "0.3"
+log = "0.4"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "handleapi", "processthreadsapi", "winbase", "synchapi"] }
