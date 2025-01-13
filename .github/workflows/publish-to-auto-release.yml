@@ -32,9 +32,9 @@ jobs:
         with:
           node-version: lts/*
 
-      - name: "Build Changelog"
-        id: build_changelog
-        uses: mikepenz/release-changelog-builder-action@v5
+      # - name: "Build Changelog"
+      #   id: build_changelog
+      #   uses: mikepenz/release-changelog-builder-action@v5
 
       - name: Setup cache
         uses: actions/cache@v4
@@ -76,7 +76,8 @@ jobs:
         with:
           tagName: v__VERSION__
           releaseName: "v__VERSION__"
-          releaseBody: ${{ steps.build_changelog.outputs.changelog }}
+          releaseBody: ""
+        # ${{ steps.build_changelog.outputs.changelog }}
           releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}
