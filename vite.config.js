@@ -1,12 +1,18 @@
 import { defineConfig } from "vite";
 import { sveltekit } from "@sveltejs/kit/vite";
+import { sentrySvelteKit } from '@sentry/sveltekit'
 
-// @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
   plugins: [
+    sentrySvelteKit({
+      sourceMapsUploadOptions: {
+        org: 'kuschelhelden-sp',
+        project: 'farmstation-frontend',
+      }
+    }),
     sveltekit()
   ],
 

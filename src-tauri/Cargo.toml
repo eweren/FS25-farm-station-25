@@ -1,6 +1,6 @@
 [package]
 name = "farm-station-25"
-version = "0.1.8"
+version = "0.1.9"
 description = "Farm Station 25 - Sync your savegames and mods with your friends"
 authors = ["Nico Hülscher"]
 edition = "2021"
@@ -30,6 +30,7 @@ walkdir = "2.5.0"
 tauri-plugin-process = "2"
 tauri-plugin-log = "2"
 regex = "1.11.1"
+sentry = "0.36.0"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "handleapi", "processthreadsapi", "winbase", "synchapi"] }

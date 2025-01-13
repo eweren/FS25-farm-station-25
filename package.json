@@ -1,6 +1,6 @@
 {
   "name": "farm-station-25",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "",
   "type": "module",
   "scripts": {
@@ -15,6 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-s3": "^3.722.0",
     "@aws-sdk/s3-request-presigner": "^3.722.0",
+    "@sentry/sveltekit": "8",
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-dialog": "~2",
     "@tauri-apps/plugin-fs": "~2",
