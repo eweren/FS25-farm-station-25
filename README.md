@@ -38,3 +38,8 @@ If you have any suggestions or improvements, feel free to open an issue or submi
 ## License
 
 This project is licensed under the BSD 2-Clause license. See the [LICENSE](LICENSE) file for more details.
+
+
+## Misc
+
+Logs are saved under `%LocalAppData%\de.farm-station-25.app\logs`

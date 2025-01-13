@@ -1,6 +1,7 @@
 import { writable, readable, get } from "svelte/store";
 import type { Config } from '../types/config';
 import { invoke } from '@tauri-apps/api/core';
+import { error, info } from '@tauri-apps/plugin-log';
 
 /** An array of all the configuration settings  */
 export const config = writable<Config>({
@@ -11,12 +12,12 @@ export const config = writable<Config>({
 const createAppVersion = () => {
   const appVersion = writable<string>()
   invoke('get_version_number').then((version) => {
-    console.log(typeof version);
+    info('App version:' + version);
     if (typeof version === "string") {
       appVersion.set(version);
     }
-  }).catch((error) => {
-    console.error('Error fetching app version:', error);
+  }).catch((e) => {
+    error('Error fetching app version:', e);
     appVersion.set("Unknown");
   });
   return appVersion;

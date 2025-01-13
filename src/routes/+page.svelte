@@ -28,13 +28,32 @@
   import { getSavegamesFromDir } from "../lib/sync/savegames.sync";
   import { appVersion, config } from "../lib/stores/config.store";
   import { remoteMods } from "../lib/stores/savegamesAndMods.store";
+  import { error } from "@tauri-apps/plugin-log";
 
   let loading = true;
 
   onMount(async () => {
-    localSavegames.set((await getSavegamesFromDir()) ?? []);
-    await loadConfig($localSavegames);
-    await getLocalMods();
+    try {
+      const savegames = (await getSavegamesFromDir()) ?? [];
+      localSavegames.set(savegames);
+    } catch (e) {
+      toast.error($t("savegames_loading_error"));
+      error(`Error loading local savegames from dir ${e}`);
+    }
+
+    try {
+      await loadConfig($localSavegames);
+    } catch (e) {
+      toast.error($t("config_loading_error"));
+      error(`Error loading config from dir ${e}`);
+    }
+
+    try {
+      await getLocalMods();
+    } catch (e) {
+      toast.error($t("mods_loading_error"));
+      error(`Error loading mods from dir ${e}`);
+    }
     loading = false;
     tolgee.subscribe((t) => {
       $currentLanguage = t.getLanguage() ?? "en";

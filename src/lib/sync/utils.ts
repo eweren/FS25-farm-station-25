@@ -5,6 +5,7 @@ import type { Savegame } from '../types/savegame';
 import { get } from 'svelte/store';
 import { getTeamHeader, getFS25Dir } from './shared.sync';
 import { config } from '../stores/config.store';
+import { error } from '@tauri-apps/plugin-log';
 
 export const r2Domain = "r2.eweren.workers.dev"
 export const protocol = "https"
@@ -27,7 +28,7 @@ export async function getPlayerStatus() {
 
     return players;
   } catch (e) {
-    console.log(e);
+    error(`Error fetching player status ${e}`);
   }
 }
 
@@ -51,7 +52,7 @@ export async function changePlayState(playing: boolean) {
 
     });
   } catch (e) {
-    console.log(e);
+    error(`Error changing play state ${e}`);
   }
 }
 
@@ -66,7 +67,7 @@ export async function saveConfig(_config: Config) {
     config.set(_config);
     return true;
   } catch (e) {
-    console.error(e);
+    error(`Error saving config ${e}`);
     return false;
   }
 }
@@ -89,6 +90,7 @@ export async function loadConfig(localSavegames: Array<Savegame>): Promise<Confi
     const file = await readFile("config.json", {
       baseDir: BaseDirectory.Config
     });
+
     const content = JSON.parse(new TextDecoder().decode(file)) as Config;
 
     for (const key in content.savegameMapping) {
@@ -101,7 +103,7 @@ export async function loadConfig(localSavegames: Array<Savegame>): Promise<Confi
     config.set(content);
     return content;
   } catch (e) {
-    console.error(e);
+    error(`Error loading config ${e}`);
     const config: Config = {
       savegameMapping: {},
       gameDataDirectory: await getFS25Dir(true) ?? "",
@@ -119,7 +121,7 @@ export async function watchFarmingSimulator() {
   try {
     await invoke("watch_farming_simulator_25");
   } catch (e) {
-    console.error(e);
+    error(`Error watching FS25: ${e}`);
   }
 }
 
@@ -130,7 +132,7 @@ export async function startGame() {
   try {
     await invoke("start_farming_simulator_25");
   } catch (e) {
-    console.error(e);
+    error(`Error starting game: ${e}`);
   }
 }
 
@@ -143,7 +145,6 @@ export async function startGame() {
  *          the team was created
  */
 export async function createTeam(teamId: string, inviteCode: string, isCreate: boolean) {
-
   const formData = new FormData();
   formData.append("teamId", teamId);
   formData.append("inviteCode", inviteCode);

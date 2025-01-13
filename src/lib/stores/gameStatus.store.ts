@@ -6,6 +6,7 @@ import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolge
 import { getCurrentWindow, UserAttentionType } from '@tauri-apps/api/window';
 import { toast } from 'svelte-sonner';
 import { syncSavegame } from '../sync/savegames.sync';
+import { info } from '@tauri-apps/plugin-log';
 
 export enum GameStatus {
   RUNNING = "running",
@@ -24,14 +25,14 @@ const createGameStatusStore = () => {
   listen("process-running", (e) => {
     if (get(state) !== GameStatus.RUNNING) {
       state.set(GameStatus.RUNNING);
-      console.log("Farming simulator is running", e);
+      info("Farming simulator is running");
     }
   });
 
   listen("process-started", async (e) => {
     if (get(state) !== GameStatus.STARTING) {
       state.set(GameStatus.STARTING);
-      console.log("Farming simulator started", e);
+      info("Farming simulator started");
       await changePlayState(true);
 
       const window = getCurrentWindow();
@@ -42,7 +43,7 @@ const createGameStatusStore = () => {
   listen("process-not-running", (e) => {
     if (get(state) !== GameStatus.NOT_RUNNING) {
       state.set(GameStatus.NOT_RUNNING);
-      console.log("Farming simulator is not running", e);
+      info("Farming simulator is not running");
     }
   });
 

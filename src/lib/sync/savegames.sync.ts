@@ -13,6 +13,7 @@ import { downloadMod, uploadMod } from './mods.sync';
 import { protocol, r2Domain, saveConfig } from './utils';
 import { config } from '../stores/config.store';
 import { remoteOnlyMods, localOnlyMods, remoteMods } from '../stores/savegamesAndMods.store';
+import { error } from '@tauri-apps/plugin-log';
 
 /**
  * Fetches metadata for all savegames of the team from remote.
@@ -30,10 +31,11 @@ export async function getSavegamesFromRemote() {
       const saveGames = await res.json() as Array<ListObjectResponse>;
       return saveGames.map(g => ({ ...g, savegameInfo: { ...g.savegameInfo, isRemote: true } }));
     } else {
-      console.error("Failed to fetch save games from remote");
+      error("Failed to fetch save games from remote");
       throw new Error("Failed to fetch save games from remote");
     }
   } catch (e) {
+    error(`Failed to fetch save games from remote: ${e}`);
     config.update((c) => ({ savegameMapping: {}, teamId: undefined, inviteCode: undefined, gameDataDirectory: c.gameDataDirectory }));
   }
 }
@@ -89,17 +91,13 @@ export async function getSavegamesFromDir() {
   if (dir == null) {
     return;
   }
-  const subfolders = await readDir(dir, {
-    baseDir: BaseDirectory.Document,
-  });
-  const saveGamesFolders = subfolders.filter(
-    (folder) => folder.isDirectory && folder.name.match(/^savegame\d/),
-  );
+  const saveGamesFolders = await invoke("get_folder_content", { dir }) as Array<string>;
+
   const saveGames: Array<Savegame> = [];
 
   for (const savegame of saveGamesFolders) {
     const careerSavegame = await readFile(
-      `${dir}/${savegame.name}/careerSavegame.xml`,
+      `${dir}/${savegame}/careerSavegame.xml`,
       {
         baseDir: BaseDirectory.Document,
       },
@@ -108,7 +106,7 @@ export async function getSavegamesFromDir() {
       .then((fileContent) => convertXML(fileContent))
       .then((json) => {
         return {
-          id: savegame.name,
+          id: savegame,
           map: json.careerSavegame.children[0].settings.children.find(
             (c: Record<string, any>) => "mapTitle" in c,
           )?.mapTitle.content as string,
@@ -138,7 +136,7 @@ export async function getSavegamesFromDir() {
       });
 
     careerSavegame.farms = await readFile(
-      `${dir}/${savegame.name}/farms.xml`,
+      `${dir}/${savegame}/farms.xml`,
       {
         baseDir: BaseDirectory.Document,
       },
@@ -197,7 +195,7 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
       await uploadSavegame(savegame, t);
     }
   } catch (e) {
-    console.error(e);
+    error(`Error syncing savegame: ${e}`);
   }
 }
 
@@ -264,7 +262,7 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
     }
     toast.dismiss(toastNr);
   } catch (e) {
-    console.error(e);
+    error(`Error uploading savegame: ${e}`);
   }
 }
 
@@ -323,7 +321,7 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
     toast.dismiss(toastNr);
   } catch (e) {
     toast(t("error"), { duration: 5000 });
-    console.error(e);
+    error(`Error downloading savegame: ${e}`);
   }
 }
 

@@ -2,6 +2,7 @@ import { check } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { toast } from 'svelte-sonner';
 import type { TFnType, DefaultParamType, TranslationKey } from '@tolgee/svelte';
+import { info } from '@tauri-apps/plugin-log';
 
 export const updateApp = async (t: TFnType<DefaultParamType, string, TranslationKey>) => {
   const update = await check();
@@ -22,14 +23,14 @@ export const updateApp = async (t: TFnType<DefaultParamType, string, Translation
       switch (event.event) {
         case 'Started':
           contentLength = event.data.contentLength ?? 0;
-          console.log(`started downloading ${event.data.contentLength} bytes`);
+          info(`started downloading ${event.data.contentLength} bytes`);
           break;
         case 'Progress':
           downloaded += event.data.chunkLength;
-          console.log(`downloaded ${downloaded} from ${contentLength}`);
+          info(`downloaded ${downloaded} from ${contentLength}`);
           break;
         case 'Finished':
-          console.log('download finished');
+          info('download finished');
           break;
       }
     });

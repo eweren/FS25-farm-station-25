@@ -1,3 +1,4 @@
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::error::Error;
@@ -18,7 +19,7 @@ static mut PROCESS_EXITED: bool = false;
 static mut PROCESS_RUNNING: bool = false;
 
 static PROCESS_NAME: &str = "FarmingSimulator2025Game.exe";
-// Asserts default windows installation path 
+// Asserts default windows installation path
 static PROCESS_PATH: &str =
     r"C:\Program Files (x86)\Farming Simulator 2025\FarmingSimulator2025.exe";
 
@@ -71,6 +72,36 @@ fn start_farming_simulator_25(app: AppHandle) {
         .expect("Failed to start process");
 
     app.emit("process-started", ()).unwrap();
+}
+
+// Reads the My Games/FarmingSimulator25 folder from the documents dir
+#[tauri::command]
+fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
+    let path = app.path().resolve(dir, BaseDirectory::Document).unwrap();
+
+    let mut savegame_folders = Vec::<String>::new();
+
+    for entry in WalkDir::new(&path)
+        .max_depth(1)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_dir())
+    {
+        let entry_path = entry.path();
+        let re = Regex::new(r"savegame\d+").unwrap();
+        if re.is_match(entry_path.file_name().unwrap().to_str().unwrap()) {
+            savegame_folders.push(
+                entry_path
+                    .file_name()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+            );
+        }
+    }
+
+    savegame_folders.into()
 }
 
 // Takes an xml as string and converts it to json
@@ -337,6 +368,15 @@ fn get_process_id(process_name: &str) -> Option<DWORD> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // .plugin(
+        //     tauri_plugin_log::Builder::new()
+        //         .target(tauri_plugin_log::Target::new(
+        //             tauri_plugin_log::TargetKind::LogDir {
+        //                 file_name: Some("logs".to_string()),
+        //             },
+        //         ))
+        //         .build(),
+        // )
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_fs::init())
@@ -344,6 +384,7 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             watch_farming_simulator_25,
+            get_folder_content,
             start_farming_simulator_25,
             convert_xml_to_json,
             read_files_as_zip,

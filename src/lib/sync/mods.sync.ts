@@ -9,6 +9,7 @@ import { getFS25Dir, getTeamHeader } from './shared.sync';
 import { protocol, r2Domain } from './utils';
 import { currentLanguage } from '../stores/language.store';
 import { config } from '../stores/config.store';
+import { error } from '@tauri-apps/plugin-log';
 
 /**
  * Takes a mod and returns its title in the current language. If no title exists, it returns the default name of the mod. 
@@ -101,7 +102,7 @@ export async function uploadAllMods(t: TFnType<DefaultParamType, string, Transla
 
   } catch (e) {
     toast(t("error"), { duration: 5000 });
-    console.error(e);
+    error(`Error uploading all mods ${e}`);
   }
   processingAllMods.set(false);
 }
@@ -135,10 +136,10 @@ export async function syncMod(mod: Mod, t: TFnType<DefaultParamType, string, Tra
       await downloadMod(remMod.key, remMod.modInfo, t);
       toast.success(t("sync_mod_completed"));
     } else {
-      console.error("No local or remote mod found for sync");
+      error("No local or remote mod found for sync");
     }
   } catch (e) {
-    console.error(e);
+    error(`Error syncing mod: ${e}`);
   }
   processingMods.delete(mod.modName);
 }
@@ -182,7 +183,7 @@ export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, T
     }
     toast.dismiss(toastNr);
   } catch (e) {
-    console.error(e);
+    error(`Error uploading mod: ${e}`);
   }
 }
 
@@ -223,6 +224,6 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
     toast.dismiss(toastNr);
   } catch (e) {
     toast(t("error"), { duration: 5000 });
-    console.error(e);
+    error(`Error downloading mod: ${e}`);
   }
 }

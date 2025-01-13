@@ -6,6 +6,7 @@
   import { syncSavegame } from "../sync/savegames.sync";
   import type { Mod } from "../types/mod";
   import { localMods } from "../stores/savegamesAndMods.store";
+  import { error } from "@tauri-apps/plugin-log";
 
   const { t } = getTranslate();
 
@@ -78,7 +79,7 @@
         try {
           await syncSavegame(savegame as Savegame, $t);
         } catch (e) {
-          console.error("Failed to sync savegame", e);
+          error(`Failed to sync savegame ${e}`);
         } finally {
           processingSavegames.delete(savegame.id);
         }
