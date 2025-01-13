@@ -4,10 +4,15 @@
   import { onMount } from "svelte";
   import { saveConfig } from "../sync/utils";
   import { config } from "../stores/config.store";
+  import { availableLanguages, capitalize } from "../utils";
 
   const tolgee = getTolgee();
 
   let currentLanguage = tolgee.value.getLanguage() ?? "de";
+
+  $: languageFormatter = new Intl.DisplayNames(currentLanguage, {
+    type: "language",
+  });
 
   function setCurrentLanguage(lang: string) {
     saveConfig({ ...$config, lang });
@@ -33,16 +38,15 @@
 
 <div class="dropdown">
   <button onclick={() => (showDropdown = !showDropdown)}>
-    <T keyName={currentLanguage} />
+    {capitalize(languageFormatter.of(currentLanguage) ?? "")}
   </button>
   {#if showDropdown}
     <div transition:slide={{ duration: 100 }} class="dropdown-content">
-      <button onclick={() => setCurrentLanguage("en")}>
-        <T keyName="en" />
-      </button>
-      <button onclick={() => setCurrentLanguage("de")}>
-        <T keyName="de" />
-      </button>
+      {#each availableLanguages as language}
+        <button onclick={() => setCurrentLanguage(language)}>
+          {capitalize(languageFormatter.of(language) ?? "")}
+        </button>
+      {/each}
     </div>
   {/if}
 </div>
@@ -54,7 +58,7 @@
   }
 
   .dropdown-content {
-    @apply rounded absolute right-0 translate-x-1/2 top-full mt-2 flex flex-col gap-1 border border-gray-300 z-10 items-stretch;
+    @apply rounded absolute right-0 bg-background translate-x-1/2 top-full mt-2 flex flex-col gap-1 border border-gray-300 z-10 items-stretch;
   }
 
   .dropdown-content button {

@@ -2,12 +2,20 @@
 
 <a href="https://ko-fi.com/eweren"><img src="images/support_me.png" height="34" ></a>
 
-
-
 # Farming Simulator 2025 sync kit
 
 This is a sync application that can be used as a replacement for a dedicated server when you want to play Farming Simulator 2025 with your friends.
 It is a simple application that allows you to sync the game state between multiple players.
+
+## Languages
+
+This application is available in the following languages:
+"de", "cs", "en", "es", "fr", "nl", "ru", "uk", "it", "pl"
+
+Most of them are translated by google translate. If you find any mistakes or want to contribute to the languages,
+contact me and I will invite you to contribute to the related tolgee project as a translator.
+  
+## Setup
 
 To set it up, you have to follow these steps:
 

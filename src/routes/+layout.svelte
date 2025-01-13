@@ -1,6 +1,6 @@
 <script lang="ts">
 	import "../app.css";
-	import de from "../i18n/de.json";
+	import en from "../i18n/en.json";
 	import {
 		TolgeeProvider,
 		Tolgee,
@@ -11,6 +11,7 @@
 	import { cachedT } from "../lib/stores/gameStatus.store";
 	import { onMount } from "svelte";
 	import { updateApp } from "../lib/updater";
+	import { availableLanguages, languagesToImportMap } from "../lib/utils";
 
 	let { children } = $props();
 
@@ -19,10 +20,10 @@
 		.use(FormatSimple())
 		.init({
 			defaultLanguage: "en",
-			availableLanguages: ["de", "en"],
+			availableLanguages,
 			staticData: {
-				de,
-				en: () => import("../i18n/en.json"),
+				...languagesToImportMap(availableLanguages.filter((l) => l !== "en")),
+				en,
 			},
 		});
 

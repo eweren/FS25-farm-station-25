@@ -55,7 +55,7 @@
   "reload": "Update",
   "remote_mods": "Remote Mods",
   "remote_savegames": "Remote savegames",
-  "savegame_no": "No. {number}",
+  "savegame_no": "Savegame {number}",
   "savegames": "Savegames",
   "savegames_loading": "Savegames are loading",
   "savegames_loading_error": "Error loading local save games. Please report the error to the developer. Logs can be found under %LocalAppData%\\de.farm-station-25.app\\logs",

@@ -60,3 +60,26 @@ export function cn(...inputs: ClassValue[]) {
 export function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export const languagesToImportMap = (languages: string[]) => {
+	const map: Record<string, () => void> = {};
+	languages.forEach((lang) => {
+		map[lang] = () => import(`../i18n/${lang}.json`);
+	});
+	return map;
+}
+
+export const availableLanguages = [
+	"de",
+	"cs",
+	"en",
+	"es",
+	"fr",
+	"nl",
+	"ru",
+	"uk",
+	"it",
+	"pl",
+];
+
+export const capitalize = (str: string): string => str.charAt(0).toUpperCase() + str.slice(1);
