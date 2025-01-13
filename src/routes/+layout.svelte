@@ -40,13 +40,6 @@
 				setTheme(newIsDark);
 			});
 
-		try {
-			await loadConfig($localSavegames);
-		} catch (e) {
-			toast.error(tolgee.t("config_loading_error"));
-			error(`Error loading config from dir ${e}`);
-		}
-
 		setTimeout(async () => {
 			await updateApp(tolgee.t);
 		}, 5000);

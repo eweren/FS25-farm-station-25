@@ -59,6 +59,13 @@
     }
 
     try {
+      await loadConfig($localSavegames);
+    } catch (e) {
+      toast.error($t("config_loading_error"));
+      error(`Error loading config from dir ${e}`);
+    }
+
+    try {
       await getLocalMods();
     } catch (e) {
       toast.error($t("mods_loading_error"));

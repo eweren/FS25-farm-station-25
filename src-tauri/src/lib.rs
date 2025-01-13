@@ -117,6 +117,7 @@ fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
             );
         }
     }
+    log::info!("get_folder_content {}", savegame_folders.len());
 
     savegame_folders.into()
 }

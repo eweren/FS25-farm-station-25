@@ -78,7 +78,7 @@ export async function getModsFromRemote() {
 
     return mods.sort((a, b) => a.modInfo.modName.localeCompare(b.modInfo.modName));
   } catch (e) {
-    config.update((c) => ({ savegameMapping: {}, teamId: undefined, inviteCode: undefined, gameDataDirectory: c.gameDataDirectory }));
+    error(`Error getting mods from remote: ${e}`);
   }
 }
 

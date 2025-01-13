@@ -74,7 +74,7 @@ jobs:
           AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
         with:
-          tagName: app-v__VERSION__
+          tagName: v__VERSION__
           releaseName: "v__VERSION__"
           releaseBody: ${{ steps.build_changelog.outputs.changelog }}
           releaseDraft: false

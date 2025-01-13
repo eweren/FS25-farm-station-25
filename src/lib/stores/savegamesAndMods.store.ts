@@ -77,14 +77,10 @@ export const processingAllMods = writable<boolean>(false);
 
 /** An array of all savegames that are synced between local and remote */
 export const savegamesWithRemote = derived([localSavegames, config, remoteSavegames], ([localSavegames, { savegameMapping }, remoteSavegames]) => localSavegames.filter(
-  (savegame) => {
-    const savegames = savegameMapping[savegame.id] != null &&
-      remoteSavegames.some(
-        (s) => s.key === savegameMapping[savegame.id],
-      );
-    return savegames;
-
-  }
+  (savegame) => savegameMapping[savegame.id] != null &&
+    remoteSavegames.some(
+      (s) => s.key === savegameMapping[savegame.id],
+    )
 ));
 
 /** An array of all savegames that are only saved locally */

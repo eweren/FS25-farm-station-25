@@ -36,7 +36,6 @@ export async function getSavegamesFromRemote() {
     }
   } catch (e) {
     error(`Failed to fetch save games from remote: ${e}`);
-    config.update((c) => ({ savegameMapping: {}, teamId: undefined, inviteCode: undefined, gameDataDirectory: c.gameDataDirectory }));
   }
 }
 

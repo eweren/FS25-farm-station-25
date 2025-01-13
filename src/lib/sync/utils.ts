@@ -62,7 +62,7 @@ export async function changePlayState(playing: boolean) {
  */
 export async function saveConfig(_config: Config) {
   try {
-    await writeFile("config.json", new TextEncoder().encode(JSON.stringify(_config)), {
+    await writeFile("config.json", new TextEncoder().encode(JSON.stringify(_config, null, 2)), {
       baseDir: BaseDirectory.Config
     });
     config.set(_config);
@@ -123,7 +123,7 @@ export async function loadConfig(localSavegames: Array<Savegame>): Promise<Confi
     if (!(await exists("config.json", { baseDir: BaseDirectory.Config }))) {
       const config: Config = {
         savegameMapping: {},
-        gameDataDirectory: await getFS25Dir(true) ?? "",
+        gameDataDirectory: await getFS25Dir(true) ?? ""
       };
 
       await saveConfig(config);
