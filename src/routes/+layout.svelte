@@ -11,10 +11,6 @@
 	import { cachedT } from "../lib/stores/gameStatus.store";
 	import { onMount } from "svelte";
 	import { updateApp } from "../lib/updater";
-	import { toast } from "svelte-sonner";
-	import { localSavegames } from "../lib/stores/savegamesAndMods.store";
-	import { loadConfig } from "../lib/sync/utils";
-	import { error } from "@tauri-apps/plugin-log";
 
 	let { children } = $props();
 

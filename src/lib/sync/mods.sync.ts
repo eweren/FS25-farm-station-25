@@ -8,7 +8,6 @@ import type { Mod, ModResponse } from '../types/mod';
 import { getFS25Dir, getTeamHeader } from './shared.sync';
 import { protocol, r2Domain } from './utils';
 import { currentLanguage } from '../stores/language.store';
-import { config } from '../stores/config.store';
 import { error } from '@tauri-apps/plugin-log';
 
 /**
@@ -35,7 +34,7 @@ export async function getLocalMods() {
   const modFiles: Array<Mod> = ((await invoke("read_mod_desc_files")) as Array<Mod & { mod_name: `FS25_${string}` }>).map(e => ({ ...e, modName: e.mod_name })).sort((a, b) => a.modName.localeCompare(b.modName));
   const modMap = new Map<string, Mod>();
   for (const modFile of modFiles) {
-    modMap.set(modFile.modName, modFile);
+    modMap.set(modFile.modName + modFile.version, modFile);
   }
 
   localMods.set(modMap);
@@ -57,7 +56,7 @@ export async function getLocalModForUpload(mod: Mod) {
     baseDir: BaseDirectory.Document,
   });
 
-  const file = new File([fileContent], mod.filename);
+  const file = new File([fileContent], mod.filename ?? `${mod.modName}.zip`);
 
   return file;
 }
@@ -118,6 +117,7 @@ export async function syncMod(mod: Mod, t: TFnType<DefaultParamType, string, Tra
     processingMods.add(mod.modName);
     const remMod = (await remoteMods.current()).find((r) => r.modInfo.modName === mod.modName);
     const locMod = get(localMods).get(mod.modName);
+
     if (remMod && locMod) {
       if (remMod.modInfo.version.localeCompare(mod.version) > 0) {
         await downloadMod(remMod.key, remMod.modInfo, t);
@@ -168,7 +168,7 @@ export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, T
     formData.append("modInfo", JSON.stringify(mod));
 
     const { status } = await fetch(
-      `${protocol}://${r2Domain}/${file.name}`,
+      `${protocol}://${r2Domain}/${file.name ?? `${mod.modName}.zip`}`,
       {
         body: formData,
         headers,
