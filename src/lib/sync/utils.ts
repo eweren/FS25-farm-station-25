@@ -6,6 +6,7 @@ import { get } from 'svelte/store';
 import { getTeamHeader, getFS25Dir } from './shared.sync';
 import { config } from '../stores/config.store';
 import { error } from '@tauri-apps/plugin-log';
+import { convertXML } from 'simple-xml-to-json';
 
 export const r2Domain = "r2.eweren.workers.dev"
 export const protocol = "https"
@@ -71,6 +72,48 @@ export async function saveConfig(_config: Config) {
     return false;
   }
 }
+
+/**
+ * Updates the name of a savegame only locally. To update the name remotely as well, the user has to sync again.
+ */
+export async function updateSavegameName(savegameName: string, savegameId: string): Promise<boolean> {
+  const dir = await getFS25Dir();
+  if (dir == null) {
+    return false;
+  }
+
+  const updatedCareerSavegameXml = await readFile(
+    `${dir}/${savegameId}/careerSavegame.xml`,
+    {
+      baseDir: BaseDirectory.Document,
+    },
+  )
+    .then((file) => new TextDecoder().decode(file))
+    .then((fileContent) => fileContent.replace(/\<savegameName\>(.*)\<\/savegameName\>/, `<savegameName>${savegameName}</savegameName>`))
+    .catch((e) => {
+      console.log(e);
+      return null;
+    });
+
+  if (updatedCareerSavegameXml == null) {
+    return false;
+  }
+
+  try {
+    await writeFile(
+      `${dir}/${savegameId}/careerSavegame.xml`,
+      new TextEncoder().encode(updatedCareerSavegameXml),
+      {
+        baseDir: BaseDirectory.Document,
+      },
+    );
+    return true;
+  } catch (e) {
+    error(`${e}`);
+    return false;
+  }
+}
+
 
 /**
  * Loads the config file from the config directory into the config storage

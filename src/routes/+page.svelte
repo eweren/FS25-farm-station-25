@@ -133,7 +133,7 @@
           });
           showInviteCode = true;
           showName = false;
-          toast.success($t("name_saved_successfully"));
+          toast.success($t("name_saved_successfully", { duration: 1500 }));
         }}
       >
         <h1 class="font-bold text-xl">
@@ -270,7 +270,7 @@
             });
             showName = true;
             showInviteCode = true;
-            toast.success($t("team_saved_successfully"));
+            toast.success($t("team_saved_successfully"), { duration: 1500 });
           } else {
             createTeamError = teamRes.reason ?? $t("error");
           }

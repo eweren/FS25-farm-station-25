@@ -1,12 +1,14 @@
 <script lang="ts">
   import * as Table from "$lib/components/ui/table/index.js";
-  import { getTranslate } from "@tolgee/svelte";
+  import { getTranslate, T } from "@tolgee/svelte";
   import type { Savegame } from "../types/savegame";
   import { processingSavegames } from "../stores/savegamesAndMods.store";
   import { syncSavegame } from "../sync/savegames.sync";
   import type { Mod } from "../types/mod";
   import { localMods } from "../stores/savegamesAndMods.store";
   import { error } from "@tauri-apps/plugin-log";
+  import * as AlertDialog from "$lib/components/ui/alert-dialog";
+  import { updateSavegameName } from "../sync/utils";
 
   const { t } = getTranslate();
 
@@ -24,16 +26,63 @@
     const minutes = Math.floor(playtime % 60);
     return `${hours}h ${minutes}m`;
   };
+
+  const setSavegameName = async (eventTarget: EventTarget | null) => {
+    const name = (eventTarget as HTMLInputElement)?.value.trim();
+    if (name && name !== savegame.name && name !== "") {
+      const res = await updateSavegameName(name, savegame.id);
+      if (res != null) {
+        location.reload();
+      } else {
+        alert("Failed to rename savegame");
+      }
+    }
+  };
 </script>
 
 <Table.Row>
   <Table.Cell>
     <div class="flex flex-col items-start">
-      <span
-        >{$t("savegame_no", {
-          number: savegame.id.replace("savegame", ""),
-        })}</span
-      >
+      <AlertDialog.Root>
+        <AlertDialog.Trigger class="text-left">
+          {savegame.name}
+          ({$t("savegame_no", {
+            number: savegame.id.replace("savegame", ""),
+          })})
+        </AlertDialog.Trigger>
+        <AlertDialog.Content>
+          <AlertDialog.Header>
+            <AlertDialog.Title
+              ><T keyName="rename_savegame" /></AlertDialog.Title
+            >
+            <AlertDialog.Description
+              class="flex flex-col gap-4 items-center text-foreground"
+            >
+              <T keyName="rename_savegame_description" />
+
+              <input
+                type="text"
+                class="p-2 max-w-xs"
+                placeholder={$t("savegame_name")}
+                value={savegame.name}
+                onchange={(e) => {
+                  setSavegameName(e.target);
+                }}
+              />
+            </AlertDialog.Description>
+          </AlertDialog.Header>
+          <AlertDialog.Footer
+            class="flex flex-row justify-center items-center gap-4"
+          >
+            <AlertDialog.Cancel>
+              <T keyName="cancel" />
+            </AlertDialog.Cancel>
+            <AlertDialog.Action>
+              <T keyName="rename" />
+            </AlertDialog.Action>
+          </AlertDialog.Footer>
+        </AlertDialog.Content>
+      </AlertDialog.Root>
       <span class="text-foreground">{savegame.map}</span>
     </div>
   </Table.Cell>

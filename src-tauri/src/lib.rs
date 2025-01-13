@@ -9,6 +9,7 @@ use std::process::Command;
 use std::time::Duration;
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_sentry::{minidump, sentry};
 use walkdir::WalkDir;
 use winapi::shared::minwindef::DWORD;
 use xml2json_rs::JsonBuilder;
@@ -71,13 +72,25 @@ fn start_farming_simulator_25(app: AppHandle) {
         .spawn()
         .expect("Failed to start process");
 
-    app.emit("process-started", ()).unwrap();
+    match app.emit("process-started", ()) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("Error emitting process-started event: {}", e);
+        }
+    };
 }
 
 // Reads the My Games/FarmingSimulator25 folder from the documents dir
 #[tauri::command]
 fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
-    let path = app.path().resolve(dir, BaseDirectory::Document).unwrap();
+    let path = match app.path().resolve(dir, BaseDirectory::Document) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("Error resolving path: {}", e);
+
+            return JsonValue::Null;
+        }
+    };
 
     let mut savegame_folders = Vec::<String>::new();
 
@@ -120,15 +133,29 @@ fn convert_xml_to_json(xml: &str) -> JsonValue {
 // Reads the files at the specific path and creates a zip from it with filename.
 #[tauri::command]
 fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValue {
-    let doc_path = app
-        .path()
-        .resolve(path, BaseDirectory::Document)
-        .unwrap()
-        .join(filename);
-    let file_path = app
+    let doc_path = match app.path().resolve(path, BaseDirectory::Document) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!(
+                "Error reading the files at the specified path {}: {}",
+                path, e
+            );
+            return JsonValue::Null;
+        }
+    }
+    .join(filename);
+
+    let file_path = match app
         .path()
         .resolve(format!("{}.zip", filename), BaseDirectory::AppLocalData)
-        .unwrap();
+    {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("Error creating a zip path in AppLocalData: {}", e);
+            return JsonValue::Null;
+        }
+    };
+
     match create_zip_archive(doc_path, file_path) {
         Ok(json_str) => json_str.into(),
         Err(e) => {
@@ -141,7 +168,13 @@ fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValue {
 // Saves a savegame (in zip format from server) to the given directory.
 #[tauri::command]
 fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonValue {
-    let dir_path = app.path().resolve(dir, BaseDirectory::Document).unwrap();
+    let dir_path = match app.path().resolve(dir, BaseDirectory::Document) {
+        Ok(p) => p,
+        Err(e) => {
+            eprintln!("Error creating zip archive: {}", e);
+            return JsonValue::Null;
+        }
+    };
 
     match unwrap_savegame(data, dir_path.as_path()) {
         Ok(bool) => bool.into(),
@@ -155,13 +188,17 @@ fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> JsonVal
 // Returns an array of metadata of all mods
 #[tauri::command]
 fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
-    let binding = app_handle
-        .path()
-        .resolve(
-            "My Games/FarmingSimulator2025/mods",
-            BaseDirectory::Document,
-        )
-        .unwrap();
+    let binding = match app_handle.path().resolve(
+        "My Games/FarmingSimulator2025/mods",
+        BaseDirectory::Document,
+    ) {
+        Ok(bool) => bool,
+        Err(e) => {
+            eprintln!("Error creating zip archive: {}", e);
+            return JsonValue::Null;
+        }
+    };
+
     let doc_path = binding.as_path();
     match parse_mod_desc_files(doc_path) {
         Ok(mods) => mods.into(),
@@ -178,42 +215,55 @@ fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
 
     let mut mods: Vec<JsonValue> = vec![];
     for entry in files {
-        let file_content = read_file_in_zip(entry.to_path_buf(), "modDesc.xml");
+        let file_content = match read_file_in_zip(entry.to_path_buf(), "modDesc.xml") {
+            Some(content) => content,
+            None => continue,
+        };
 
-        if file_content.clone().unwrap().as_mut_str().len() == 0 {
+        if file_content.len() == 0 {
             continue;
         }
 
-        let json = &convert_xml_to_json(file_content.clone().unwrap().as_mut_str());
+        let json = &convert_xml_to_json(&file_content);
 
-        let filename = entry
-            .to_str()
-            .unwrap()
-            .split("/")
-            .last()
-            .unwrap()
-            .split("\\")
-            .last()
-            .unwrap()
-            .to_string();
+        let filename = match entry.file_name() {
+            Some(name) => name.to_string_lossy().to_string(),
+            None => continue,
+        };
 
-        let titles = json.get("modDesc").unwrap().get("title").unwrap().clone();
+        let titles = match json.get("modDesc").and_then(|md| md.get("title")) {
+            Some(title) => title.clone(),
+            None => {
+                eprintln!("Error: title not found in modDesc");
+                return Err(JsonValue::Null);
+            }
+        };
 
         let r#mod = ModDesc {
             mod_name: filename.replace(".zip", ""),
             filename,
             titles,
-            version: json
-                .get("modDesc")
-                .unwrap()
-                .get("version")
-                .unwrap()
-                .as_array()
-                .unwrap()[0]
-                .to_string()
-                .replace('"', ""),
+            version: match json.get("modDesc").and_then(|md| md.get("version")) {
+                Some(version) => match version.as_array() {
+                    Some(array) => array[0].to_string().replace('"', ""),
+                    None => {
+                        eprintln!("Error: version is not an array");
+                        return Err(JsonValue::Null);
+                    }
+                },
+                None => {
+                    eprintln!("Error: version not found in modDesc");
+                    return Err(JsonValue::Null);
+                }
+            },
         };
-        mods.push(serde_json::to_value(r#mod).unwrap());
+        match serde_json::to_value(r#mod) {
+            Ok(mod_json) => mods.push(mod_json),
+            Err(e) => {
+                eprintln!("Error serializing mod: {}", e);
+                return Err(JsonValue::Null);
+            }
+        }
     }
     return Ok(JsonValue::Array(mods));
 }
@@ -222,12 +272,23 @@ fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
 fn get_zip_file_paths(folder: &Path) -> Vec<PathBuf> {
     let mut zip_paths = Vec::new();
     if folder.is_dir() {
-        for entry in fs::read_dir(folder).unwrap() {
-            let entry = entry.unwrap();
-            let path = entry.path();
-            if path.is_file() && path.extension().and_then(|ext| ext.to_str()) == Some("zip") {
-                zip_paths.push(path);
+        match fs::read_dir(folder) {
+            Ok(entries) => {
+                for entry in entries {
+                    match entry {
+                        Ok(entry) => {
+                            let path = entry.path();
+                            if path.is_file()
+                                && path.extension().and_then(|ext| ext.to_str()) == Some("zip")
+                            {
+                                zip_paths.push(path);
+                            }
+                        }
+                        Err(e) => eprintln!("Error reading entry: {}", e),
+                    }
+                }
             }
+            Err(e) => eprintln!("Error reading directory: {}", e),
         }
     }
     zip_paths
@@ -251,10 +312,28 @@ fn create_zip_archive(path: PathBuf, output_path: PathBuf) -> Result<JsonValue, 
         let entry = entry?;
         let entry_path = entry.path();
         if entry_path.is_file() {
-            let relative_path = entry_path.strip_prefix(&path).unwrap();
+            let relative_path = match entry_path.strip_prefix(&path) {
+                Ok(path) => path,
+                Err(e) => {
+                    eprintln!("Error stripping prefix: {}", e);
+                    continue;
+                }
+            };
             println!("entry {:?}", relative_path);
-            zip_writer.start_file(relative_path.to_str().unwrap(), options)?;
-            zip_writer.write_all(&std::fs::read(entry_path)?)?;
+            match zip_writer.start_file(relative_path.to_str().unwrap(), options) {
+                Ok(_) => (),
+                Err(e) => {
+                    eprintln!("Error starting file in zip: {}", e);
+                    continue;
+                }
+            }
+            match zip_writer.write_all(&std::fs::read(entry_path)?) {
+                Ok(_) => (),
+                Err(e) => {
+                    eprintln!("Error writing file to zip: {}", e);
+                    continue;
+                }
+            }
         }
     }
 
@@ -292,16 +371,38 @@ fn unwrap_savegame(zip_bytes: Vec<u8>, dest_path: &Path) -> Result<JsonValue, Bo
 }
 
 fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> {
-    let file = File::open(path_to_zip).unwrap();
-    let mut archive = ZipArchive::new(BufReader::new(file)).unwrap();
+    let file = match File::open(&path_to_zip) {
+        Ok(file) => file,
+        Err(e) => {
+            eprintln!("Error opening zip file: {}", e);
+            return None;
+        }
+    };
+
+    let mut archive = match ZipArchive::new(BufReader::new(file)) {
+        Ok(archive) => archive,
+        Err(e) => {
+            eprintln!("Error reading zip archive: {}", e);
+            return None;
+        }
+    };
 
     for i in 0..archive.len() {
-        let mut file = archive.by_index(i).unwrap();
+        let mut file = match archive.by_index(i) {
+            Ok(file) => file,
+            Err(e) => {
+                eprintln!("Error accessing file in zip archive: {}", e);
+                continue;
+            }
+        };
+
         if let Some(name) = file.enclosed_name() {
             if name.to_str() == Some(filename) {
-                // Lese den Inhalt der Datei "modDesc.xml"
                 let mut contents = String::new();
-                file.read_to_string(&mut contents).unwrap();
+                if let Err(e) = file.read_to_string(&mut contents) {
+                    eprintln!("Error reading file content: {}", e);
+                    return None;
+                }
                 return Some(contents);
             }
         }
@@ -314,10 +415,16 @@ fn check_process(app: &AppHandle) {
         unsafe {
             PROCESS_RUNNING = true;
         }
-        app.emit("process-running", ()).unwrap();
+        match app.emit("process-running", ()) {
+            Ok(_) => (),
+            Err(e) => eprintln!("Error emitting process-running event: {}", e),
+        }
     } else {
         if unsafe { PROCESS_RUNNING } == true {
-            app.emit("process-exited", ()).unwrap();
+            match app.emit("process-exited", ()) {
+                Ok(_) => (),
+                Err(e) => eprintln!("Error emitting process-exited event: {}", e),
+            }
             unsafe {
                 PROCESS_EXITED = true;
             }
@@ -325,7 +432,10 @@ fn check_process(app: &AppHandle) {
         unsafe {
             PROCESS_RUNNING = false;
         }
-        app.emit("process-not-running", ()).unwrap();
+        match app.emit("process-not-running", ()) {
+            Ok(_) => (),
+            Err(e) => eprintln!("Error emitting process-not-running event: {}", e),
+        }
     }
 }
 
@@ -367,7 +477,22 @@ fn get_process_id(process_name: &str) -> Option<DWORD> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let client = sentry::init((
+        "https://941c7dc09f815c10e23b5da78c322226@o4507068185903104.ingest.de.sentry.io/4508636237332560",
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            auto_session_tracking: true,
+            ..Default::default()
+        },
+    ));
+
+    // Caution! Everything before here runs in both app and crash reporter processes
+    #[cfg(not(target_os = "ios"))]
+    let _guard = minidump::init(&client);
+    // Everything after here runs in only the app process
+
     tauri::Builder::default()
+        .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
         .plugin(
             tauri_plugin_log::Builder::new()
                 .target(tauri_plugin_log::Target::new(

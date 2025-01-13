@@ -107,6 +107,8 @@ export async function getSavegamesFromDir() {
       .then((json) => {
         return {
           id: savegame,
+          name: json.careerSavegame.children[0].settings.children.find((c: Record<string, any>) => "savegameName" in c,
+          )?.savegameName.content as string,
           map: json.careerSavegame.children[0].settings.children.find(
             (c: Record<string, any>) => "mapTitle" in c,
           )?.mapTitle.content as string,
@@ -133,7 +135,15 @@ export async function getSavegamesFromDir() {
           ),
           farms: [],
         } satisfies Savegame
+      })
+      .catch((e) => {
+        console.log(e);
+        return null;
       });
+
+    if (careerSavegame == null) {
+      continue;
+    }
 
     careerSavegame.farms = await readFile(
       `${dir}/${savegame}/farms.xml`,

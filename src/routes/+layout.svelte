@@ -47,7 +47,9 @@
 			error(`Error loading config from dir ${e}`);
 		}
 
-		await updateApp(tolgee.t);
+		setTimeout(async () => {
+			await updateApp(tolgee.t);
+		}, 5000);
 	});
 
 	const setTheme = (isDark: boolean) => {

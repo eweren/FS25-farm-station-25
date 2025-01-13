@@ -6,6 +6,7 @@ import { info } from '@tauri-apps/plugin-log';
 
 export const updateApp = async (t: TFnType<DefaultParamType, string, TranslationKey>) => {
   const update = await check();
+
   if (update) {
 
     toast.info(t('update_found', {
@@ -19,7 +20,7 @@ export const updateApp = async (t: TFnType<DefaultParamType, string, Translation
     let downloaded = 0;
     let contentLength = 0;
     // alternatively we could also call update.download() and update.install() separately
-    await update.downloadAndInstall((event) => {
+    await update.download((event) => {
       switch (event.event) {
         case 'Started':
           contentLength = event.data.contentLength ?? 0;
@@ -40,6 +41,7 @@ export const updateApp = async (t: TFnType<DefaultParamType, string, Translation
       action: {
         label: t("update_success_restart_btn"),
         onClick: async () => {
+          await update.install();
           await relaunch();
         }
       },
