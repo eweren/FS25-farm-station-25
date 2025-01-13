@@ -11,7 +11,7 @@ export const updateApp = async (t: TFnType<DefaultParamType, string, Translation
     toast.info(t('update_found', {
       version: update.version,
       date: update.date,
-      notes: update.body
+      body: update.body
     }), {
       duration: 5000
     });

@@ -37,7 +37,6 @@
     try {
       const savegames = (await getSavegamesFromDir()) ?? [];
       localSavegames.set(savegames);
-      throw new Error("Test error");
     } catch (e) {
       toast.error($t("savegames_loading_error"), {
         duration: 20000,

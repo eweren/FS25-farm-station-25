@@ -277,7 +277,7 @@ var worker_default = {
             });
           }
           const inviteCode = getRandomEntries(landwirtschaftArray, 3).join("-");
-          const res2 = await env.LS25DATA.put(_teamId, JSON.stringify({ inviteCode }));
+          const res2 = await env.LS25DATA.put(_teamId, JSON.stringify({ iC: inviteCode }));
           console.log(res2);
           return Response.json({ status: "success", inviteCode }, {
             headers: {
