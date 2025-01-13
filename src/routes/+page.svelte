@@ -92,6 +92,8 @@
     }
   }
 
+  let isSubmitting = false;
+
   const tolgee = getTolgee();
 
   const { t } = getTranslate();
@@ -126,11 +128,18 @@
       <form
         class="flex-1 flex flex-col gap-4"
         onsubmit={async (e) => {
+          if (isSubmitting) {
+            return;
+          }
+
+          isSubmitting = true;
+
           // Get the formdata of the formevent
           const formData = new FormData(e.currentTarget);
           const name = formData.get("name") as string;
           if (name.trim().length === 0) {
             toast.error($t("enter_name"));
+            isSubmitting = false;
             return;
           }
 
@@ -141,6 +150,7 @@
           showInviteCode = true;
           showName = false;
           toast.success($t("name_saved_successfully", { duration: 1500 }));
+          isSubmitting = false;
         }}
       >
         <h1 class="font-bold text-xl">
@@ -159,7 +169,11 @@
           placeholder={$t("your_name")}
         />
 
-        <button type="submit" class="btn-primary mt-auto">
+        <button
+          disabled={isSubmitting}
+          type="submit"
+          class="btn-primary mt-auto"
+        >
           <T keyName="enter_name_btn" />
         </button>
       </form>
@@ -250,6 +264,10 @@
     <form
       class="flex-1 flex flex-col gap-4"
       onsubmit={async (e) => {
+        if (isSubmitting) {
+          return;
+        }
+        isSubmitting = true;
         // Get the formdata of the formevent
         const formData = new FormData(e.currentTarget);
         const teamId = formData.get("teamId") as string;
@@ -259,6 +277,7 @@
           ((inviteCode?.trim().length ?? 0) === 0 && joinStep === "join")
         ) {
           toast.error($t("missing_fields"));
+          isSubmitting = false;
           return;
         }
 
@@ -278,11 +297,14 @@
             showName = true;
             showInviteCode = true;
             toast.success($t("team_saved_successfully"), { duration: 1500 });
+            isSubmitting = false;
           } else {
             createTeamError = teamRes.reason ?? $t("error");
+            isSubmitting = false;
           }
         } catch (error) {
           toast.error($t("team_save_error"));
+          isSubmitting = false;
         }
       }}
     >
@@ -336,7 +358,11 @@
         </span>
       {/if}
       {#if joinStep === "join" || joinStep === "create"}
-        <button type="submit" class="btn-primary mt-auto">
+        <button
+          disabled={isSubmitting}
+          type="submit"
+          class="btn-primary mt-auto"
+        >
           <T keyName={`join_btn_${joinStep}`} />
         </button>
       {/if}

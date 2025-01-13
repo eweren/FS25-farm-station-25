@@ -22,8 +22,7 @@
 		.use(DevTools())
 		.use(FormatSimple())
 		.init({
-			language: "de",
-			defaultLanguage: "de",
+			defaultLanguage: "en",
 			availableLanguages: ["de", "en"],
 			staticData: {
 				de,

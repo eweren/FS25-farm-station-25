@@ -402,7 +402,22 @@ var worker_default = {
     }
   }
 };
+
+const logWrapper = {
+  async fetch(request, env) {
+    const res = await worker_default.fetch(request, env);
+    const log = {
+      url: request.url,
+      method: request.method,
+      headers: Array.from(res.headers.entries()).map(e => e.join(": ")).join("; "),
+      status: res.status
+    }
+    console.log(log);
+    return res;
+  }
+}
+
 export {
-  worker_default as default
+  logWrapper as default
 };
 //# sourceMappingURL=worker.js.map
