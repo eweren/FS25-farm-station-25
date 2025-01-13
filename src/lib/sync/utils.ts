@@ -27,7 +27,10 @@ export async function getPlayerStatus() {
       (r) => r.json() as Promise<Array<string>>,
     );
 
-    return players;
+    if (Array.isArray(players)) {
+      return players;
+    }
+    return [];
   } catch (e) {
     error(`Error fetching player status ${e}`);
   }

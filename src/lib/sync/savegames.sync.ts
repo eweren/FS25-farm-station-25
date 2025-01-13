@@ -241,7 +241,7 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
     const formData = new FormData();
     formData.append("file", file);
 
-    const savegameInfo = { ...saveGame, mods: saveGame.mods.length };
+    const savegameInfo = { ...saveGame, mods: saveGame.mods?.length ?? 0 };
 
     formData.append("savegameInfo", JSON.stringify(savegameInfo));
 

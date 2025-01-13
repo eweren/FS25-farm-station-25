@@ -102,13 +102,16 @@
                   ),
                 )
                 .toArray().length,
-              number: (savegame.mods as Array<Mod>).length,
+              number:
+                savegame.mods != null
+                  ? (savegame.mods as Array<Mod>).length
+                  : 0,
             })}
       </span>
       <span class="text-foreground">
         {$t("players_no", {
           number: savegame.farms.reduce(
-            (prev, f) => prev + f.players.length,
+            (prev, f) => prev + (f.players?.length ?? 0),
             0,
           ),
         })}
