@@ -16,7 +16,6 @@ use serde_json::Value as JsonValue;
 use std::process::Command;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter};
-#[cfg(not(debug_assertions))]
 use tauri_plugin_sentry::{minidump, sentry};
 use winapi::shared::minwindef::DWORD;
 
@@ -153,30 +152,22 @@ fn get_process_id(process_name: &str) -> Option<DWORD> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    #[cfg(not(debug_assertions))]
-    {
-        let client = sentry::init((
-            "https://941c7dc09f815c10e23b5da78c322226@o4507068185903104.ingest.de.sentry.io/4508636237332560",
-            sentry::ClientOptions {
-                release: sentry::release_name!(),
-                auto_session_tracking: true,
-                ..Default::default()
-            },
-        ));
+    let client = sentry::init((
+        "https://941c7dc09f815c10e23b5da78c322226@o4507068185903104.ingest.de.sentry.io/4508636237332560",
+        sentry::ClientOptions {
+            release: sentry::release_name!(),
+            auto_session_tracking: true,
+            ..Default::default()
+        },
+    ));
 
-        // Caution! Everything before here runs in both app and crash reporter processes
-        #[cfg(not(target_os = "ios"))]
-        let _guard = minidump::init(&client);
-        // Everything after here runs in only the app process
+    // Caution! Everything before here runs in both app and crash reporter processes
+    #[cfg(not(target_os = "ios"))]
+    let _guard = minidump::init(&client);
+    // Everything after here runs in only the app process
 
-        let mut builder = tauri::Builder::default();
-        builder = builder.plugin(tauri_plugin_sentry::init_with_no_injection(&client));
-    }
-
-    #[cfg(debug_assertions)]
-    let mut builder = tauri::Builder::default();
-
-    builder
+    tauri::Builder::default()
+        .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
         .plugin(
             tauri_plugin_log::Builder::new()
                 .max_file_size(50_000)
