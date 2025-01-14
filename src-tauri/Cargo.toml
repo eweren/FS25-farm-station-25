@@ -1,6 +1,6 @@
 [package]
 name = "farm-station-25"
-version = "0.1.14"
+version = "0.2.0"
 description = "Farm Station 25 - Sync your savegames and mods with your friends"
 authors = ["Nico Hülscher"]
 edition = "2021"
@@ -10,13 +10,13 @@ name = "farm_station_25_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2", features = [] }
+tauri-build = { version = "2.0.5", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
-tauri-plugin-opener = "2"
+tauri = { version = "2.2.2", features = [] }
+tauri-plugin-opener = "2.2.4"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = "1.0.135"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 xml2json-rs = "1.0.1"
@@ -25,8 +25,10 @@ walkdir = "2.5.0"
 tauri-plugin-process = "2"
 tauri-plugin-log = "2"
 regex = "1.11.1"
-tauri-plugin-sentry = "0.3"
-log = "0.4"
+tauri-plugin-sentry = "0.4"
+log = "0.4.25"
+serde-xml-rs = "0.6.0"
+ts-rs = "10.1"
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["winuser", "handleapi", "processthreadsapi", "winbase", "synchapi"] }

@@ -1,12 +1,11 @@
 import { invoke } from '@tauri-apps/api/core';
-import { BaseDirectory, readFile, exists, writeFile } from '@tauri-apps/plugin-fs';
+import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs';
 import type { Config } from '../types/config';
 import type { Savegame } from '../types/savegame';
 import { get } from 'svelte/store';
 import { getTeamHeader, getFS25Dir } from './shared.sync';
 import { config } from '../stores/config.store';
 import { error } from '@tauri-apps/plugin-log';
-import { convertXML } from 'simple-xml-to-json';
 
 export const r2Domain = "r2.eweren.workers.dev"
 export const protocol = "https"
@@ -64,16 +63,8 @@ export async function changePlayState(playing: boolean) {
  * Saves the config and sets the `configStore` as well.
  */
 export async function saveConfig(_config: Config) {
-  try {
-    await writeFile("config.json", new TextEncoder().encode(JSON.stringify(_config, null, 2)), {
-      baseDir: BaseDirectory.Config
-    });
-    config.set(_config);
-    return true;
-  } catch (e) {
-    error(`Error saving config ${e}`);
-    return false;
-  }
+  invoke("save_config", { config: JSON.stringify(_config) })
+  config.set(_config);
 }
 
 /**
@@ -122,42 +113,17 @@ export async function updateSavegameName(savegameName: string, savegameId: strin
  * Loads the config file from the config directory into the config storage
  */
 export async function loadConfig(localSavegames: Array<Savegame>): Promise<Config> {
-  try {
-    if (!(await exists("config.json", { baseDir: BaseDirectory.Config }))) {
-      const config: Config = {
-        savegameMapping: {},
-        gameDataDirectory: await getFS25Dir(true) ?? ""
-      };
+  const _config: Config = await invoke("load_config", { gameDataDirectory: await getFS25Dir(true) ?? "" });
 
-      await saveConfig(config);
-      return config;
+  for (const key in _config.savegameMapping) {
+    if (!localSavegames.find((sg) => sg.id === key)) {
+      delete _config.savegameMapping[key];
     }
-
-    const file = await readFile("config.json", {
-      baseDir: BaseDirectory.Config
-    });
-
-    const content = JSON.parse(new TextDecoder().decode(file)) as Config;
-
-    for (const key in content.savegameMapping) {
-      if (!localSavegames.find((sg) => sg.id === key)) {
-        delete content.savegameMapping[key];
-      }
-    }
-    content.savegameMapping = content.savegameMapping ?? {};
-
-    config.set(content);
-    return content;
-  } catch (e) {
-    error(`Error loading config ${e}`);
-    const config: Config = {
-      savegameMapping: {},
-      gameDataDirectory: await getFS25Dir(true) ?? "",
-    };
-
-    await saveConfig(config);
-    return config;
   }
+  _config.savegameMapping = _config.savegameMapping ?? {};
+
+  config.set(_config);
+  return _config;
 }
 
 /**

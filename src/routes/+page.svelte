@@ -34,10 +34,12 @@
   let loading = true;
 
   onMount(async () => {
+    console.log("On mount");
     try {
       const savegames = (await getSavegamesFromDir()) ?? [];
       localSavegames.set(savegames);
     } catch (e) {
+      console.error(e);
       toast.error($t("savegames_loading_error"), {
         duration: 20000,
         dismissable: false,
@@ -57,20 +59,25 @@
       });
       error(`Error loading local savegames from dir ${e}`);
     }
+    console.log("On mount2");
 
     try {
       await loadConfig($localSavegames);
     } catch (e) {
+      console.error(e);
       toast.error($t("config_loading_error"));
       error(`Error loading config from dir ${e}`);
     }
+    console.log("On mount3");
 
     try {
       await getLocalMods();
     } catch (e) {
+      console.error(e);
       toast.error($t("mods_loading_error"));
       error(`Error loading mods from dir ${e}`);
     }
+    console.log("On mount4");
     loading = false;
     tolgee.subscribe((t) => {
       $currentLanguage = t.getLanguage() ?? "en";

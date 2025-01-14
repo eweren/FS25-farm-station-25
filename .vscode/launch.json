@@ -5,14 +5,32 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch App Debug",
-      "type": "cppvsdbg",
+      "type": "lldb",
       "request": "launch",
-      // change the exe name to your actual exe name
-      // (to debug release builds, change `target/debug` to `release/debug`)
-      "program": "${workspaceRoot}/src-tauri/target/debug/fs25-savegame-sync.exe",
-      "cwd": "${workspaceRoot}",
+      "name": "Tauri Development Debug",
+      "cargo": {
+        "args": [
+          "build",
+          "--manifest-path=./src-tauri/Cargo.toml",
+          "--no-default-features"
+        ]
+      },
+      // task for the `beforeDevCommand` if used, must be configured in `.vscode/tasks.json`
       "preLaunchTask": "ui:dev"
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Tauri Production Debug",
+      "cargo": {
+        "args": [
+          "build",
+          "--release",
+          "--manifest-path=./src-tauri/Cargo.toml"
+        ]
+      },
+      // task for the `beforeBuildCommand` if used, must be configured in `.vscode/tasks.json`
+      "preLaunchTask": "ui:build"
     }
   ]
 }

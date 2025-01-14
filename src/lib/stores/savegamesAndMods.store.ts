@@ -50,10 +50,17 @@ export const remoteMods = (() => {
   }
 })();
 
-/** An array of all mods that are only on the remote server */
+/** An array of all mods that are only on the remote server and linked in any of the savegames */
 export const remoteOnlyMods = derived([localSavegames, localMods, remoteMods], ([localSavegames, localMods, remoteMods]) => {
-  const uniqueMods = new Set(localSavegames.flatMap(s => s.mods).filter((mod) => !localMods.has(mod.modName + mod.version)));
+  const uniqueMods = new Set(localSavegames.flatMap(s => s.mods).filter((mod) => mod.modName.startsWith("FS25_") && !localMods.has(mod.modName + mod.version)));
   const mods = [...Array.from(uniqueMods).map(mod => remoteMods.get(mod.modName) ?? mod)].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
+  return mods;
+});
+
+/** An array of all mods that are only on the remote server and not used in any savegame */
+export const remoteOnlyModsNotPresenInSavegames = derived([localSavegames, localMods, remoteMods], ([localSavegames, localMods, remoteMods]) => {
+  const localModKeys = Array.from(localMods.keys());
+  const mods = Array.from(remoteMods).filter(m => !localModKeys.includes(m[0])).map(m => m[1]).sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
   return mods;
 });
 

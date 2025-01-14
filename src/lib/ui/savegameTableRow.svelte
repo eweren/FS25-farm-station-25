@@ -98,7 +98,7 @@
                 .keys()
                 .filter((localMod) =>
                   (savegame.mods as Array<Mod>).some(
-                    (m) => m.modName === localMod,
+                    (m) => m.modName + m.version === localMod,
                   ),
                 )
                 .toArray().length,

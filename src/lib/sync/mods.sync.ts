@@ -18,7 +18,8 @@ import { error } from '@tauri-apps/plugin-log';
 export const getTitleFromMod = (mod: Mod) => {
   if (mod.titles) {
     const lang = get(currentLanguage);
-    return lang in mod.titles[0] ? mod.titles[0][lang][0] : Object.values(mod.titles[0])?.[0]?.[0] ?? mod.modName;
+    const title = mod.titles.find(t => lang in t)?.[lang]?.[0] ?? Object.values(mod.titles?.[0])?.[0]?.[0] ?? mod.modName;
+    return title;
   } else if (mod.modName) {
     return mod.modName;
   } else {
@@ -36,6 +37,8 @@ export async function getLocalMods() {
   for (const modFile of modFiles) {
     modMap.set(modFile.modName + modFile.version, modFile);
   }
+
+  console.log(modMap.entries())
 
   localMods.set(modMap);
 
@@ -74,6 +77,8 @@ export async function getModsFromRemote() {
     const mods = await fetch(`${protocol}://${r2Domain}/_mods`, { headers }).then(
       (r) => r.json() as Promise<Array<ModResponse>>,
     );
+
+    console.log(mods);
 
     return mods.sort((a, b) => a.modInfo.modName.localeCompare(b.modInfo.modName));
   } catch (e) {
@@ -149,7 +154,7 @@ export async function syncMod(mod: Mod, t: TFnType<DefaultParamType, string, Tra
  * @param mod the mod to upload
  * @param t tolgee t function to localize toast messages
  */
-export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, TranslationKey>) {
+export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, TranslationKey>, notifySuccess = false) {
   try {
     const headers = getTeamHeader();
     if (!headers) {
@@ -178,6 +183,9 @@ export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, T
 
     if (status === "success") {
       await remoteMods.current();
+      if (notifySuccess) {
+        toast.success(t("sync_mod_completed"));
+      }
     } else {
       toast(t("error"), { duration: 5000 });
     }
@@ -195,7 +203,6 @@ export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, T
  */
 export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParamType, string, TranslationKey>) {
   try {
-
     const headers = getTeamHeader();
     if (!headers) {
       return;
@@ -216,7 +223,7 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
       },
     ).then(async (response) => response.arrayBuffer());
 
-    await writeFile(`${dir}/mods/${mod.filename}`, new Uint8Array(data), {
+    await writeFile(`${dir}/mods/${mod.filename ?? `${mod.modName}.zip`}`, new Uint8Array(data), {
       baseDir: BaseDirectory.Document,
     });
 

@@ -1,31 +1,19 @@
 <script lang="ts">
   import * as Table from "$lib/components/ui/table/index.js";
-  import { getTolgee, getTranslate } from "@tolgee/svelte";
+  import { getTranslate } from "@tolgee/svelte";
   import {
-    localMods,
     processingAllMods,
     processingMods,
   } from "../stores/savegamesAndMods.store";
   import type { Mod } from "../types/mod";
-  import { syncMod } from "../sync/mods.sync";
+  import { getTitleFromMod, syncMod } from "../sync/mods.sync";
 
   const { t } = getTranslate();
-  const tolgee = getTolgee();
 
   export let mod: Mod;
   export let type: "sync" | "local" | "remote";
 
-  $: tolgeeLang = tolgee.value.getLanguage() ?? "en";
-
-  const localModIfPresent = $localMods.get(mod.modName);
-
-  $: title =
-    localModIfPresent?.titles != null &&
-    tolgeeLang in localModIfPresent.titles?.[0]
-      ? localModIfPresent.titles[0][tolgeeLang][0]
-      : localModIfPresent?.titles != null
-        ? Object.values(localModIfPresent.titles[0])[0][0]
-        : mod.modName;
+  $: title = $t("back") ? getTitleFromMod(mod) : mod.modName;
 </script>
 
 <Table.Row>
@@ -44,8 +32,8 @@
       onclick={async () => {
         await syncMod(mod, $t);
       }}
-      title={$t("sync_savegame")}
-      aria-label={$t("sync_savegame")}
+      title={$t("sync_mod")}
+      aria-label={$t("sync_mod")}
     >
       {#if processingMods.has(mod.modName)}
         <span

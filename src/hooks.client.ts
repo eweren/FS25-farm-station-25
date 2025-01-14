@@ -1,3 +1,4 @@
+import { dev } from '$app/environment';
 import { handleErrorWithSentry, replayIntegration } from "@sentry/sveltekit";
 import * as Sentry from '@sentry/sveltekit';
 
@@ -19,4 +20,6 @@ Sentry.init({
 });
 
 // If you have a custom error handler, pass it to `handleErrorWithSentry`
-export const handleError = handleErrorWithSentry();
+export const handleError = dev ? () => {
+  console.error('Error caught by custom error handler');
+} : handleErrorWithSentry();

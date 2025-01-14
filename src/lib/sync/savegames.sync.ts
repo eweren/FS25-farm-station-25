@@ -1,19 +1,18 @@
 import { invoke } from '@tauri-apps/api/core';
-import { readDir, BaseDirectory, readFile, remove } from '@tauri-apps/plugin-fs';
-import { convertXML } from 'simple-xml-to-json';
-import type { ListObjectResponse } from '../types/listObjectResponse';
-import type { Savegame } from '../types/savegame';
-import { localSavegames, localSavegames as localSavegamesStore, processingSavegames, remoteSavegames } from '../stores/savegamesAndMods.store';
+import { BaseDirectory, readFile, remove } from '@tauri-apps/plugin-fs';
+import { localMods, localSavegames, localSavegames as localSavegamesStore, processingSavegames, remoteSavegames } from '../stores/savegamesAndMods.store';
 import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
-import type { Mod } from '../types/mod';
 import { getFS25Dir, getTeamHeader } from './shared.sync';
 import { downloadMod, uploadMod } from './mods.sync';
 import { protocol, r2Domain, saveConfig } from './utils';
 import { config } from '../stores/config.store';
 import { remoteOnlyMods, localOnlyMods, remoteMods } from '../stores/savegamesAndMods.store';
-import { error } from '@tauri-apps/plugin-log';
+import { error, info } from '@tauri-apps/plugin-log';
+import type { CareerSavegame } from '../genTypes/CareerSavegame';
+import type { ListObjectResponse } from '../types/listObjectResponse';
+import type { Savegame } from '../types/savegame';
 
 /**
  * Fetches metadata for all savegames of the team from remote.
@@ -92,78 +91,34 @@ export async function getSavegamesFromDir() {
   }
   const saveGamesFolders = await invoke("get_folder_content", { dir }) as Array<string>;
 
+
   const saveGames: Array<Savegame> = [];
 
   for (const savegame of saveGamesFolders) {
-    const careerSavegame = await readFile(
-      `${dir}/${savegame}/careerSavegame.xml`,
-      {
-        baseDir: BaseDirectory.Document,
-      },
-    )
-      .then((file) => new TextDecoder().decode(file))
-      .then((fileContent) => convertXML(fileContent))
-      .then((json) => {
-        return {
-          id: savegame,
-          name: json.careerSavegame.children[0].settings.children.find((c: Record<string, any>) => "savegameName" in c,
-          )?.savegameName.content as string,
-          map: json.careerSavegame.children[0].settings.children.find(
-            (c: Record<string, any>) => "mapTitle" in c,
-          )?.mapTitle.content as string,
-          creationDate: json.careerSavegame.children[0].settings.children.find(
-            (c: Record<string, any>) => "creationDate" in c,
-          )?.creationDate.content as string,
-          saveDate: json.careerSavegame.children[0].settings.children.find(
-            (c: Record<string, any>) => "saveDate" in c,
-          )?.saveDate.content as string,
-          money: parseInt(
-            json.careerSavegame?.children
-              ?.find((c: Record<string, any>) => "statistics" in c)
-              ?.statistics?.children?.find(
-                (c: Record<string, any>) => "money" in c,
-              )?.money?.content ?? 0,
-          ),
-          mods: json.careerSavegame?.children?.filter((c: Record<string, any>) => "mod" in c && (c.mod as Mod).modName.startsWith("FS25_"))?.map((c: { mod: Mod }) => c.mod),
-          playTime: parseFloat(
-            json.careerSavegame?.children
-              ?.find((c: Record<string, any>) => "statistics" in c)
-              ?.statistics?.children?.find(
-                (c: Record<string, any>) => "playTime" in c,
-              )?.playTime?.content ?? 0,
-          ),
-          farms: [],
-        } satisfies Savegame
-      })
-      .catch((e) => {
-        console.log(e);
-        return null;
-      });
+    const loadedSavegame = await invoke("parse_local_savegame_data", { savegamePath: `${dir}/${savegame}` }) as CareerSavegame;
 
-    if (careerSavegame == null) {
-      continue;
-    }
-
-    careerSavegame.farms = await readFile(
-      `${dir}/${savegame}/farms.xml`,
-      {
-        baseDir: BaseDirectory.Document,
-      },
-    )
-      .then((file) => new TextDecoder().decode(file))
-      .then((fileContent) => convertXML(fileContent))
-      .then((json) =>
-        json.farms.children.map((f: Record<string, any>) => ({
-          name: f.farm.name,
-          money: f.farm.money,
-          players: f.farm.children
-            .find((c: Record<string, any>) => "players" in c)
-            ?.players.children.map(
-              (c: Record<string, any>) => c.player?.lastNickname as string,
-            ) as string,
-        })),
-      );
-    saveGames.push(careerSavegame);
+    saveGames.push({
+      id: savegame,
+      creationDate: loadedSavegame.settings.creationDate,
+      map: loadedSavegame.settings.mapTitle,
+      mods: loadedSavegame.mod?.map((mod) => ({
+        filename: `${mod.modName}.zip` as `FS25_${string}.zip`,
+        modName: mod.modName as `FS25_${string}`,
+        version: mod.version,
+        titles: [{ en: [mod.title] }],
+        fileHash: mod.fileHash,
+      })) ?? [],
+      money: loadedSavegame.statistics.money,
+      name: loadedSavegame.settings.savegameName,
+      playTime: loadedSavegame.statistics.playTime,
+      saveDate: loadedSavegame.settings.saveDate,
+      isRemote: false,
+      farms: loadedSavegame.farms?.farm.map((f) => ({
+        money: `${f.money}`,
+        name: f.name,
+        players: f.players.player.map((p) => p.lastNickname)
+      })) ?? [],
+    });
   }
 
   return saveGames;
@@ -185,6 +140,13 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
     if (remoteSavegame) {
       const remoteSavegameDate = new Date(remoteSavegame.savegameInfo.saveDate);
       const localSavegameDate = new Date(savegame.saveDate);
+      const _savegameModsAsStrings = savegame.isRemote ? [] : savegame.mods.map((m) => (m.modName + m.version).trim());
+      const _remoteOnlyMods = savegame.isRemote ? [] : get(localMods)
+        .keys()
+        .filter((localMod) =>
+          _savegameModsAsStrings.includes(localMod.trim())
+        )
+        .toArray();
 
       if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime)) {
         await downloadSavegame(remoteSavegame.key, t);
@@ -193,12 +155,15 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
         await uploadSavegame(savegame, t);
         toast.success(t("sync_completed"));
       } else if (notifyOnMostRecent) {
-        config.update((config) => {
-          config.savegameMapping[savegame.id] = remoteSavegame.key;
-          return { ...config }
-        })
-        await saveConfig(get(config));
+        let _config = get(config);
+        _config.savegameMapping[savegame.id] = remoteSavegame.key;
+
+        await saveConfig(_config);
         toast.info(t("already_synced"));
+      }
+      if (_remoteOnlyMods.length > 0) {
+        info(`Remote has mods that local doesn't have: ${_remoteOnlyMods.join(", ")}. Starting to download them.`);
+        await syncModsForSavegame(savegame, t);
       }
     } else {
       await uploadSavegame(savegame, t);
@@ -341,7 +306,7 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
  * @param t the t function from Tolgee
  */
 export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<DefaultParamType, string, TranslationKey>) {
-
+  info(`Syncing mods for savegame ${saveGame.id}`);
   let toastNr;
 
   if (saveGame) {
@@ -349,9 +314,11 @@ export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<Default
     const onlyLocalMods = saveGame.mods.filter(m => get(localOnlyMods).some(mod => m.filename === m.filename && m.version === mod.version));
     if (onlyRemoteMods.length > 0) {
       for (const mod of onlyRemoteMods) {
-        const remMod = get(remoteMods).get(mod.modName);
+        const remMod = get(remoteMods).get(mod.modName + mod.version);
         if (remMod?.remoteFileName) {
+          info(`Downloading mod ${remMod.remoteFileName}`);
           await downloadMod(remMod?.remoteFileName, mod, t);
+          toast.success(t("sync_mod_completed"));
         } else {
           setTimeout(() => {
             toast.info(t("mod_not_found_remote", { mod: mod.modName }), { duration: 7000 });
@@ -361,6 +328,7 @@ export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<Default
     }
     if (onlyLocalMods.length > 0) {
       for (const mod of onlyLocalMods) {
+        info(`Uploading mod ${mod.filename}`);
         await uploadMod(mod, t);
         toast.dismiss(toastNr);
       }

@@ -5,6 +5,7 @@
     localOnlyMods,
     processingMods,
     remoteOnlyMods,
+    remoteOnlyModsNotPresenInSavegames,
     syncedMods,
   } from "../stores/savegamesAndMods.store";
   import ModRow from "./modRow.svelte";
@@ -34,7 +35,7 @@
           class="text-start text-default pointer-events-none bg-slate-500/10"
           colspan={3}
         >
-          <T keyName="remote_mods" />
+          <T keyName="remote_mods_missing_in_savegames" />
         </Table.Cell>
       </Table.Row>
     {/if}
@@ -56,8 +57,8 @@
             onclick={async () => {
               await uploadAllMods($t);
             }}
-            title={$t("sync_savegame")}
-            aria-label={$t("sync_savegame")}
+            title={$t("sync_all_mods")}
+            aria-label={$t("sync_all_mods")}
           >
             <T keyName="upload_all_mods" />
           </button>
@@ -80,6 +81,19 @@
     {/if}
     {#each $syncedMods as mod (mod.modName + mod.version)}
       <ModRow {mod} type="sync" />
+    {/each}
+    {#if $remoteOnlyModsNotPresenInSavegames.length > 0}
+      <Table.Row>
+        <Table.Cell
+          class="text-start text-default pointer-events-none bg-slate-500/10"
+          colspan={3}
+        >
+          <T keyName="remote_mods" />
+        </Table.Cell>
+      </Table.Row>
+    {/if}
+    {#each $remoteOnlyModsNotPresenInSavegames as mod}
+      <ModRow {mod} type="remote" />
     {/each}
   </Table.Body>
 </Table.Root>

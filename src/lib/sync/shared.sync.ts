@@ -8,10 +8,16 @@ import { config } from '../stores/config.store';
  * Creates a teamId header for all backend requests to identify the team
  */
 export const getTeamHeader = () => {
-  const teamId = get(config).teamId;
+  const _config = get(config);
+  const teamId = _config.teamId;
+  const lang = _config.lang;
+
+  const headers = new Headers();
+  if (lang != null) {
+    headers.append("lang", lang);
+  }
 
   if (teamId != null) {
-    const headers = new Headers();
     headers.append("teamId", teamId);
     return headers;
   }

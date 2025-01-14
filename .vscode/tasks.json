@@ -4,11 +4,6 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "build:debug",
-      "type": "cargo",
-      "command": "build"
-    },
-    {
       "label": "ui:dev",
       "type": "shell",
       // `dev` keeps running in the background
@@ -22,14 +17,13 @@
       ]
     },
     {
-      "label": "dev",
-      "dependsOn": [
-        "build:debug",
-        "ui:dev"
-      ],
-      "group": {
-        "kind": "build"
-      }
+      "label": "ui:build",
+      "type": "shell",
+      // change this to your `beforeBuildCommand`:
+      "command": "bun",
+      "args": [
+        "build"
+      ]
     }
   ]
 }
