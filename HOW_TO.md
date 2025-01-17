@@ -47,15 +47,13 @@ Welcome to the FS25 Savegame Sync guide! Follow these steps to get started with 
 
 - When savegames are synced, related mods are also uploaded or downloaded if they are not already on your local machine.
 - Easily download mods from other users within the app.
-
-  ![Download Mods](./how_to/mods.png)
+  <img src="how_to/mods" width="300" >
 
 
 ## Languages
 
 - The app is available in several languages. Choose your preferred language from the settings menu.
-  ![Language Settings](./how_to/languages.png)
-
+  <img src="how_to/languages" width="300" >
 
 
 Enjoy seamless savegame and mod synchronization with Farm Station 25!
