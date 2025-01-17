@@ -1,4 +1,4 @@
-name = "r2"
+name = "farm-station-25"
 main = "src/index.ts"
 compatibility_date = "2025-01-15"
 minify = true
