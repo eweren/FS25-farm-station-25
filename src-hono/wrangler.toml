@@ -1,4 +1,4 @@
-name = "r2_new"
+name = "r2"
 main = "src/index.ts"
 compatibility_date = "2025-01-15"
 minify = true
