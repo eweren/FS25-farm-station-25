@@ -5,7 +5,7 @@ import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
 import { getFS25Dir, getTeamHeader } from './shared.sync';
-import { downloadMod, uploadMod } from './mods.sync';
+import { downloadMod, getTitleFromMod, uploadMod } from './mods.sync';
 import { protocol, baseDomain, saveConfig } from './utils';
 import { config } from '../stores/config.store';
 import { remoteOnlyMods, localOnlyMods, remoteMods } from '../stores/savegamesAndMods.store';
@@ -155,18 +155,15 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
         )
         .toArray();
 
-      debugger
       if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime)) {
         if (savegame.isRemote) {
 
           const toastId = toast.custom(SelectModSlot as unknown as ComponentType, {
             componentProps: {
               onCancel: () => {
-                console.log("Cancelled")
                 toast.dismiss(toastId);
               },
               onSelectionChange: async (savegameId: string) => {
-                console.log(savegameId);
                 toast.dismiss(toastId);
                 await downloadSavegame(remoteSavegame.key, t, savegameId);
                 toast.success(t("sync_completed"));
@@ -347,7 +344,7 @@ export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<Default
         if (remMod?.remoteFileName) {
           info(`Downloading mod ${remMod.remoteFileName}`);
           await downloadMod(remMod?.remoteFileName, mod, t);
-          toast.success(t("sync_mod_completed"));
+          toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
         } else {
           setTimeout(() => {
             toast.info(t("mod_not_found_remote", { mod: mod.modName }), { duration: 7000 });

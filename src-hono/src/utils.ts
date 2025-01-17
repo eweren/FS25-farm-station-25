@@ -36,8 +36,6 @@ export async function getSharedDataFromHeaders(c: Context<{
   const lang = c.req.header('lang') ?? "en";
   const { iC: inviteCode, p: players } = (teamId != null && teamId.length > 0 ? JSON.parse(await c.env.LS25DATA.get(teamId) ?? "{}") : {}) as { iC?: string, p?: string };
 
-  console.log(inviteCode, teamId);
-
   if (throwIfUnauthenticated && (teamId == null || inviteCode == null)) {
     throw new HTTPException(401, { message: 'unauthorized' });
   }

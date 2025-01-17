@@ -24,8 +24,6 @@
   let showConfirm = $state(false);
 
   const { t } = getTranslate();
-
-  $effect(() => console.log("$localSavegames", $localSavegames));
 </script>
 
 <Dialog.Root

@@ -13,7 +13,7 @@
   export let mod: Mod;
   export let type: "sync" | "local" | "remote";
 
-  $: title = $t("back") ? getTitleFromMod(mod) : mod.modName;
+  $: title = mod.filename; // $t("back") ? getTitleFromMod(mod) : mod.modName;
 </script>
 
 <Table.Row>

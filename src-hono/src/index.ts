@@ -37,14 +37,48 @@ app.get('/_playerStatus', async (context) => {
 
 app.get('/_mods', async (context) => {
   await getSharedDataFromHeaders(context, true);
-  const options = { prefix: "_mods" };
-  const { objects } = await context.env.LS25.list({ ...options, limit: 500, include: ["customMetadata"] });
-  if (objects === null) {
+  const options: R2ListOptions = { prefix: "_mods", limit: 500, include: ["customMetadata"] };
+  let listed = await context.env.LS25.list(options);
+
+  let truncated = listed.truncated;
+  let cursor = listed.truncated ? listed.cursor : undefined;
+
+  while (truncated) {
+    const next = await context.env.LS25.list({
+      ...options,
+      cursor: cursor,
+    });
+    listed.objects.push(...next.objects);
+
+    truncated = next.truncated;
+    cursor = next.truncated ? next.cursor : undefined;
+  }
+
+  if (listed.objects === null) {
     return context.json([]);
   }
 
-  return context.json(objects.map((o) => ({ key: o.key, uploaded: o.uploaded, size: o.size, modInfo: JSON.parse(o.customMetadata?.modInfo ?? "{}") })));
+  return context.json(listed.objects.map((o) => ({ key: o.key, uploaded: o.uploaded, size: o.size, modInfo: JSON.parse(o.customMetadata?.modInfo ?? "{}") })));
 });
+
+app.get('/_mods/:mod', async (context) => {
+  await getSharedDataFromHeaders(context, true);
+
+  const mod = context.req.param("mod");
+
+  const object = await context.env.LS25.get(`_mods/${mod}`);
+  if (object === null) {
+    return context.text("Object Not Found", 404);
+  }
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("etag", object.httpEtag);
+  return context.body(object.body, {
+    headers
+  });
+});
+
 
 app.get('/:teamId/savegames/:savegame', async (context) => {
   const { teamId: tId } = await getSharedDataFromHeaders(context, true);
@@ -57,8 +91,6 @@ app.get('/:teamId/savegames/:savegame', async (context) => {
 
   const savegame = context.req.param("savegame");
   const path = `${teamId}/savegames/${savegame}`;
-
-  console.log("PATH: ", path);
 
   const object = await context.env.LS25.get(path);
   if (object === null) {
@@ -95,19 +127,13 @@ app.post('/', async (context) => {
     const _inviteCode = postData.get("inviteCode") as string | undefined;
     const _isCreate = (postData.get("isCreate") as string | undefined) === "true";
 
-    console.log("teamId", _teamId, typeof _teamId);
-    console.log(_inviteCode);
-
     if (_teamId == null || (_inviteCode == null && !_isCreate)) {
-      console.log(1);
       return context.json({ status: "false", reason: "no_teamId_or_inviteCode" });
     }
     if (_teamId.length < 3 || _inviteCode == null || (_inviteCode.length < 3 && !_isCreate)) {
-      console.log(2);
       return context.json({ status: "false", reason: "teamId_or_inviteCode_too_short" });
     }
     const { iC } = JSON.parse(await context.env.LS25DATA.get(_teamId) ?? "{}");
-    console.log(iC);
     if (iC != null) {
       if (iC === _inviteCode) {
         return context.json({ status: "success" });
@@ -120,10 +146,8 @@ app.post('/', async (context) => {
 
     const inviteCode = getRandomEntries((lang in landwirtschaftArray ? landwirtschaftArray[lang as keyof typeof landwirtschaftArray] : landwirtschaftArray["en"]).split(", "), 3).join("-");
     const res2 = await context.env.LS25DATA.put(_teamId, JSON.stringify({ iC: inviteCode }));
-    console.log(res2);
     return context.json({ status: "success", inviteCode });
   } catch (err) {
-    console.log(err);
     return context.json({ status: "error" });
   }
 });
@@ -171,8 +195,6 @@ app.put('/:teamId/savegames/:savegame', async (context) => {
     throw new HTTPException(400, { message: 'invalid_key' });
   }
 
-  console.log("Received file", file.name);
-
   const savegameInfo = formData.get("savegameInfo") as string | undefined;
 
   if (savegameInfo == null) {
@@ -180,16 +202,13 @@ app.put('/:teamId/savegames/:savegame', async (context) => {
   }
 
   try {
-    console.log("Putting file");
     const fileId = `${teamId}/savegames/${savegame}`;
     const res2 = await context.env.LS25.put(fileId, file, {
       customMetadata: { savegameInfo }
     });
-    console.log("Putted", res2);
     return context.json({ status: "success", path: fileId });
 
   } catch (err) {
-    console.log(err);
     return context.json({ status: "error" });
   }
 });
@@ -220,11 +239,9 @@ app.put('/:modId', async (context) => {
     const res2 = await context.env.LS25.put(`_mods/${modId}___${JSON.parse(modInfo).version}`, file, {
       customMetadata: { modInfo }
     });
-    console.log(res2);
     return context.json({ status: "success" });
 
   } catch (err) {
-    console.log(err);
     return context.json({ status: "error" });
   }
 });

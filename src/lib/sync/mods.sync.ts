@@ -39,8 +39,6 @@ export async function getLocalMods() {
     modMap.set(modFile.modName + modFile.version, modFile);
   }
 
-  console.log(modMap.entries())
-
   localMods.set(modMap);
 
   return modFiles;
@@ -85,8 +83,6 @@ export async function getModsFromRemote() {
         return r.json();
       }) as Array<ModResponse>;
 
-    console.log(mods);
-
     return mods.sort((a, b) => a.modInfo.modName.localeCompare(b.modInfo.modName));
   } catch (e) {
     error(`Error getting mods from remote: ${e}`);
@@ -128,12 +124,12 @@ export async function syncMod(mod: Mod, t: TFnType<DefaultParamType, string, Tra
   try {
     processingMods.add(mod.modName);
     const remMod = (await remoteMods.current()).find((r) => r.modInfo.modName === mod.modName);
-    const locMod = get(localMods).get(mod.modName);
+    const locMod = get(localMods).get(mod.modName + mod.version);
 
     if (remMod && locMod) {
       if (remMod.modInfo.version.localeCompare(mod.version) > 0) {
         await downloadMod(remMod.key, remMod.modInfo, t);
-        toast.success(t("sync_mod_completed"));
+        toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
       } else if (remMod.modInfo.version.localeCompare(mod.version) < 0) {
         await uploadMod(mod, t, true);
       } else if (notifyOnMostRecent) {
@@ -142,10 +138,10 @@ export async function syncMod(mod: Mod, t: TFnType<DefaultParamType, string, Tra
       }
     } else if (locMod && !remMod) {
       await uploadMod(mod, t, true);
-      toast.success(t("sync_mod_completed"));
+      toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
     } else if (!locMod && remMod) {
       await downloadMod(remMod.key, remMod.modInfo, t);
-      toast.success(t("sync_mod_completed"));
+      toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
     } else {
       error("No local or remote mod found for sync");
     }
