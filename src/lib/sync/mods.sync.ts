@@ -6,9 +6,10 @@ import { toast } from 'svelte-sonner';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
 import type { Mod, ModResponse } from '../types/mod';
 import { getFS25Dir, getTeamHeader } from './shared.sync';
-import { protocol, r2Domain } from './utils';
+import { protocol, baseDomain } from './utils';
 import { currentLanguage } from '../stores/language.store';
 import { error } from '@tauri-apps/plugin-log';
+import { config } from '../stores/config.store';
 
 /**
  * Takes a mod and returns its title in the current language. If no title exists, it returns the default name of the mod. 
@@ -18,7 +19,7 @@ import { error } from '@tauri-apps/plugin-log';
 export const getTitleFromMod = (mod: Mod) => {
   if (mod.titles) {
     const lang = get(currentLanguage);
-    const title = mod.titles.find(t => lang in t)?.[lang]?.[0] ?? Object.values(mod.titles?.[0])?.[0]?.[0] ?? mod.modName;
+    const title = mod.titles.find(t => typeof t === "object" ? lang in t : t)?.[lang]?.[0] ?? Object.values(mod.titles?.[0])?.[0]?.[0] ?? mod.modName;
     return title;
   } else if (mod.modName) {
     return mod.modName;
@@ -74,9 +75,15 @@ export async function getModsFromRemote() {
     if (!headers) {
       return;
     }
-    const mods = await fetch(`${protocol}://${r2Domain}/_mods`, { headers }).then(
-      (r) => r.json() as Promise<Array<ModResponse>>,
-    );
+    const mods = await fetch(`${protocol}://${baseDomain}/_mods`, { headers })
+      .then((r) => {
+        if (r.status === 401) {
+          config.set({ ...get(config), teamId: undefined, inviteCode: undefined, savegameMapping: {} });
+          error("Unauthorized to get mods from remote");
+          return [];
+        }
+        return r.json();
+      }) as Array<ModResponse>;
 
     console.log(mods);
 
@@ -128,14 +135,13 @@ export async function syncMod(mod: Mod, t: TFnType<DefaultParamType, string, Tra
         await downloadMod(remMod.key, remMod.modInfo, t);
         toast.success(t("sync_mod_completed"));
       } else if (remMod.modInfo.version.localeCompare(mod.version) < 0) {
-        await uploadMod(mod, t);
-        toast.success(t("sync_mod_completed"));
+        await uploadMod(mod, t, true);
       } else if (notifyOnMostRecent) {
         toast.info(t("already_synced"));
 
       }
     } else if (locMod && !remMod) {
-      await uploadMod(mod, t);
+      await uploadMod(mod, t, true);
       toast.success(t("sync_mod_completed"));
     } else if (!locMod && remMod) {
       await downloadMod(remMod.key, remMod.modInfo, t);
@@ -173,7 +179,7 @@ export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, T
     formData.append("modInfo", JSON.stringify(mod));
 
     const { status } = await fetch(
-      `${protocol}://${r2Domain}/${file.name ?? `${mod.modName}.zip`}`,
+      `${protocol}://${baseDomain}/${file.name ?? `${mod.modName}.zip`}`,
       {
         body: formData,
         headers,
@@ -181,15 +187,15 @@ export async function uploadMod(mod: Mod, t: TFnType<DefaultParamType, string, T
       },
     ).then(async (response) => response.json());
 
+    toast.dismiss(toastNr);
     if (status === "success") {
       await remoteMods.current();
       if (notifySuccess) {
-        toast.success(t("sync_mod_completed"));
+        toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
       }
     } else {
       toast(t("error"), { duration: 5000 });
     }
-    toast.dismiss(toastNr);
   } catch (e) {
     error(`Error uploading mod: ${e}`);
   }
@@ -216,7 +222,7 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
     }
 
     const data = await fetch(
-      `${protocol}://${r2Domain}/${key}`,
+      `${protocol}://${baseDomain}/${key}`,
       {
         method: "GET",
         headers,

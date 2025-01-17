@@ -44,7 +44,7 @@
   <Table.Cell>
     <div class="flex flex-col items-start">
       <AlertDialog.Root>
-        <AlertDialog.Trigger class="text-left">
+        <AlertDialog.Trigger class="text-left" disabled={savegame.isRemote}>
           {savegame.name}
           ({$t("savegame_no", {
             number: savegame.id.replace("savegame", ""),

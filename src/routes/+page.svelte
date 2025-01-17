@@ -109,6 +109,12 @@
 
   let joinStep: "choose" | "join" | "create" = "choose";
 
+  $: {
+    if (joinStep) {
+      createTeamError = null;
+    }
+  }
+
   let showInviteCode = false;
   let showName = false;
 </script>
@@ -295,6 +301,7 @@
         );
 
         try {
+          createTeamError = null;
           if (teamRes.status === "success") {
             await saveConfig({
               ...$config,

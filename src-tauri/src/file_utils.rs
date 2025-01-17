@@ -224,9 +224,12 @@ pub fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
 
 // Reads the files at the specific path and creates a zip from it with filename.
 #[tauri::command]
-pub fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValue {
+pub async fn read_files_as_zip(app: AppHandle, path: String, filename: String) -> JsonValue {
     log::info!("read_files_as_zip {:?} {:?}", path, filename);
-    let doc_path = match app.path().resolve(path, BaseDirectory::Document) {
+    let doc_path = match app
+        .path()
+        .resolve(path.to_string(), BaseDirectory::Document)
+    {
         Ok(p) => p,
         Err(e) => {
             log::error!(
@@ -237,7 +240,7 @@ pub fn read_files_as_zip(app: AppHandle, path: &str, filename: &str) -> JsonValu
             return JsonValue::Null;
         }
     }
-    .join(filename);
+    .join(filename.to_string());
 
     let file_path = match app
         .path()

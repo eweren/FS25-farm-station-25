@@ -10,22 +10,16 @@ It is a simple application that allows you to sync the game state between multip
 ## Languages
 
 This application is available in the following languages:
-"de", "cs", "en", "es", "fr", "nl", "ru", "uk", "it", "pl"
+"de", "cs", "en", "es", "fr", "nl", "ru", "uk", "it", "pl", "hu"
 
 Most of them are translated by google translate. If you find any mistakes or want to contribute to the languages,
 contact me and I will invite you to contribute to the related tolgee project as a translator.
   
-## Setup
 
-To set it up, you have to follow these steps:
+## Checkout the [manual](HOW_TO.md) for information on how to use this application
 
-1. Download the latest release from the [releases page](https://github.com/eweren/FS25-farm-station-25/releases) and install it on your machine.
 
-2. Run the application
-
-3. Either join or create a new team 
-
-4. Start the game and enjoy playing with your friends!
+## Preview images
 
 Savegames                |  Mods
 :-------------------------:|:-------------------------:

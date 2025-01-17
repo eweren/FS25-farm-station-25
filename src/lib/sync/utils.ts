@@ -6,9 +6,10 @@ import { get } from 'svelte/store';
 import { getTeamHeader, getFS25Dir } from './shared.sync';
 import { config } from '../stores/config.store';
 import { error } from '@tauri-apps/plugin-log';
+import { dev } from '$app/environment';
 
-export const r2Domain = "r2.eweren.workers.dev"
-export const protocol = "https"
+export const baseDomain = dev ? "127.0.0.1:8787" : "r2.eweren.workers.dev";
+export const protocol = dev ? "http" : "https";
 
 export const documentsDefaultDir = "My Games\\FarmingSimulator2025";
 
@@ -22,7 +23,7 @@ export async function getPlayerStatus() {
     if (!headers) {
       return;
     }
-    const players = await fetch(`${protocol}://${r2Domain}/_playerStatus`, { headers }).then(
+    const players = await fetch(`${protocol}://${baseDomain}/_playerStatus`, { headers }).then(
       (r) => r.json() as Promise<Array<string>>,
     );
 
@@ -48,7 +49,7 @@ export async function changePlayState(playing: boolean) {
     }
 
     headers.append("content-type", "application/json")
-    await fetch(`${protocol}://${r2Domain}/_playerStatus`, {
+    await fetch(`${protocol}://${baseDomain}/_playerStatus`, {
       headers,
       method: "POST",
       body: JSON.stringify({ playing, name })
@@ -164,7 +165,7 @@ export async function createTeam(teamId: string, inviteCode: string, isCreate: b
     formData.append("isCreate", "true");
   }
   const res = await fetch(
-    `${protocol}://${r2Domain}`,
+    `${protocol}://${baseDomain}`,
     {
       body: formData,
       method: "POST",

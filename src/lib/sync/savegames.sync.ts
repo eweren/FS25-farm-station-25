@@ -6,13 +6,15 @@ import { toast } from 'svelte-sonner';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
 import { getFS25Dir, getTeamHeader } from './shared.sync';
 import { downloadMod, uploadMod } from './mods.sync';
-import { protocol, r2Domain, saveConfig } from './utils';
+import { protocol, baseDomain, saveConfig } from './utils';
 import { config } from '../stores/config.store';
 import { remoteOnlyMods, localOnlyMods, remoteMods } from '../stores/savegamesAndMods.store';
 import { error, info } from '@tauri-apps/plugin-log';
 import type { CareerSavegame } from '../genTypes/CareerSavegame';
 import type { ListObjectResponse } from '../types/listObjectResponse';
 import type { Savegame } from '../types/savegame';
+import SelectModSlot from '../ui/selectModSlot.svelte';
+import { type ComponentType } from 'svelte';
 
 /**
  * Fetches metadata for all savegames of the team from remote.
@@ -24,7 +26,7 @@ export async function getSavegamesFromRemote() {
     if (!headers) {
       return [];
     }
-    const res = await fetch(`${protocol}://${r2Domain}`, { headers });
+    const res = await fetch(`${protocol}://${baseDomain}`, { headers });
 
     if (res.status === 200) {
       const saveGames = await res.json() as Array<ListObjectResponse>;
@@ -97,6 +99,11 @@ export async function getSavegamesFromDir() {
   for (const savegame of saveGamesFolders) {
     const loadedSavegame = await invoke("parse_local_savegame_data", { savegamePath: `${dir}/${savegame}` }) as CareerSavegame;
 
+    if (loadedSavegame == null) {
+      // savegameFolder is probably a steam folder without real content
+      continue;
+    }
+
     saveGames.push({
       id: savegame,
       creationDate: loadedSavegame.settings.creationDate,
@@ -148,9 +155,30 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
         )
         .toArray();
 
+      debugger
       if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime)) {
-        await downloadSavegame(remoteSavegame.key, t);
-        toast.success(t("sync_completed"));
+        if (savegame.isRemote) {
+
+          const toastId = toast.custom(SelectModSlot as unknown as ComponentType, {
+            componentProps: {
+              onCancel: () => {
+                console.log("Cancelled")
+                toast.dismiss(toastId);
+              },
+              onSelectionChange: async (savegameId: string) => {
+                console.log(savegameId);
+                toast.dismiss(toastId);
+                await downloadSavegame(remoteSavegame.key, t, savegameId);
+                toast.success(t("sync_completed"));
+              }
+            },
+            duration: Infinity
+          });
+        } else {
+          await downloadSavegame(remoteSavegame.key, t);
+          toast.success(t("sync_completed"));
+        }
+
       } else if (remoteSavegameDate < localSavegameDate || remoteSavegame.savegameInfo.playTime !== savegame.playTime) {
         await uploadSavegame(savegame, t);
         toast.success(t("sync_completed"));
@@ -161,6 +189,7 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
         await saveConfig(_config);
         toast.info(t("already_synced"));
       }
+
       if (_remoteOnlyMods.length > 0) {
         info(`Remote has mods that local doesn't have: ${_remoteOnlyMods.join(", ")}. Starting to download them.`);
         await syncModsForSavegame(savegame, t);
@@ -215,7 +244,7 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
     toastNr = toast.loading(t("uploading_savegame", { savegame: saveGame.id }), { duration: Infinity });
 
     const { status, path } = await fetch(
-      `${protocol}://${r2Domain}/${remoteSavegameId}`,
+      `${protocol}://${baseDomain}/${remoteSavegameId}`,
       {
         body: formData,
         headers,
@@ -245,7 +274,7 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
  * @param saveGameKey the key of the savegame to download (remote-key)
  * @param t the tolgee t function to localize the toasts
  */
-export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultParamType, string, TranslationKey>) {
+export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultParamType, string, TranslationKey>, overrideSavegameId: null | string = null) {
   try {
 
     const headers = getTeamHeader();
@@ -255,7 +284,7 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
     let toastNr = toast.loading(t("downloading_savegame"), { duration: Infinity });
 
     const data = await fetch(
-      `${protocol}://${r2Domain}/${saveGameKey}`,
+      `${protocol}://${baseDomain}/${saveGameKey}`,
       {
         method: "GET",
         headers,
@@ -266,7 +295,7 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
 
     toastNr = toast.loading(t("unzip_savegame"), { duration: Infinity });
 
-    const id = get(localSavegames).find((sg) => get(config).savegameMapping[sg.id] === saveGameKey)?.id;
+    const id = overrideSavegameId ?? get(localSavegames).find((sg) => get(config).savegameMapping[sg.id] === saveGameKey)?.id;
 
     // save the files
     const dir = await getFS25Dir();
@@ -329,8 +358,7 @@ export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<Default
     if (onlyLocalMods.length > 0) {
       for (const mod of onlyLocalMods) {
         info(`Uploading mod ${mod.filename}`);
-        await uploadMod(mod, t);
-        toast.dismiss(toastNr);
+        await uploadMod(mod, t, true);
       }
     }
   }
