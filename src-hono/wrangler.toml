@@ -2,6 +2,7 @@ name = "r2_new"
 main = "src/index.ts"
 compatibility_date = "2025-01-15"
 minify = true
+account_id = "d9ecce8bbe39fe364970386ffeb65967"
 
 r2_buckets = [
   { binding = "LS25", bucket_name = "ls25", jurisdiction = "eu" }
