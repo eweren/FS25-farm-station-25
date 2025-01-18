@@ -3,6 +3,7 @@ use std::{error::Error, fs::File, path::Path};
 
 use serde_json::Value as JsonValue;
 use tauri::{path::BaseDirectory, AppHandle, Manager};
+use tauri_plugin_sentry::sentry;
 use zip::ZipArchive;
 
 use crate::farms_structs::Farms;
@@ -16,6 +17,10 @@ pub fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> Jso
     let dir_path: std::path::PathBuf = match app.path().resolve(dir, BaseDirectory::Document) {
         Ok(p) => p,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error creating zip archive: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error creating zip archive: {}", e);
             return JsonValue::Null;
         }
@@ -29,6 +34,10 @@ pub fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> Jso
     match unwrap_savegame(data, dir_path.as_path()) {
         Ok(bool) => bool.into(),
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error creating zip archive: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error creating zip archive: {}", e);
             return JsonValue::Null;
         }
@@ -42,6 +51,10 @@ pub fn parse_local_savegame_data(app: AppHandle, savegame_path: &str) -> JsonVal
     let savegame_path = match app.path().resolve(savegame_path, BaseDirectory::Document) {
         Ok(bool) => bool,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error creating savegame path: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error creating savegame path: {}", e);
             return JsonValue::Null;
         }
@@ -62,6 +75,10 @@ pub fn parse_local_savegame_data(app: AppHandle, savegame_path: &str) -> JsonVal
     let career_file = match File::open(&career_path) {
         Ok(file) => file,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error opening career file: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error opening career file: {}", e);
             return JsonValue::Null;
         }
@@ -70,6 +87,10 @@ pub fn parse_local_savegame_data(app: AppHandle, savegame_path: &str) -> JsonVal
     let career_data: CareerSavegame = match serde_xml_rs::from_reader(career_file) {
         Ok(data) => data,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error parsing career file: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error parsing career file: {}", e);
             return JsonValue::Null;
         }
@@ -85,6 +106,10 @@ pub fn parse_local_savegame_data(app: AppHandle, savegame_path: &str) -> JsonVal
     let farms_file = match File::open(&farms_path) {
         Ok(file) => file,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error opening farms file: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error opening farms file: {}", e);
             return JsonValue::Null;
         }
@@ -94,6 +119,10 @@ pub fn parse_local_savegame_data(app: AppHandle, savegame_path: &str) -> JsonVal
     let farms_data: Farms = match serde_xml_rs::from_reader(farms_file) {
         Ok(data) => data,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error parsing farms file: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error parsing farms file: {}", e);
             return JsonValue::Null;
         }

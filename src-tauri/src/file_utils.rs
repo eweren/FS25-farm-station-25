@@ -7,6 +7,7 @@ use std::io::{BufReader, Read, Write};
 use std::path::{Path, PathBuf};
 use tauri::path::BaseDirectory;
 use tauri::{AppHandle, Manager};
+use tauri_plugin_sentry::sentry;
 use walkdir::WalkDir;
 use xml2json_rs::JsonBuilder;
 use zip::write::FileOptions;
@@ -33,6 +34,10 @@ pub fn load_config(app_handle: tauri::AppHandle, game_data_directory: &str) -> J
     {
         Ok(bool) => bool,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error creating config path: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error creating config path: {}", e);
             return config.into();
         }
@@ -43,6 +48,10 @@ pub fn load_config(app_handle: tauri::AppHandle, game_data_directory: &str) -> J
         match serde_json::to_string_pretty(&config) {
             Ok(str) => str,
             Err(e) => {
+                sentry::capture_message(
+                    &format!("Error serializing config: {}", e.to_string()),
+                    sentry::Level::Error,
+                );
                 log::error!("Error serializing config: {}", e);
                 return config.into();
             }
@@ -53,6 +62,10 @@ pub fn load_config(app_handle: tauri::AppHandle, game_data_directory: &str) -> J
     let file_content = match fs::read_to_string(config_path) {
         Ok(content) => content,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error reading config file: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error reading config file: {}", e);
             return config.into();
         }
@@ -62,6 +75,10 @@ pub fn load_config(app_handle: tauri::AppHandle, game_data_directory: &str) -> J
     let content: Config = match serde_json::from_str(&file_content) {
         Ok(content) => content,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error parsing config file: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error parsing config file: {}", e);
             return config.into();
         }
@@ -82,6 +99,10 @@ pub fn save_config(app_handle: tauri::AppHandle, config: &str) {
     {
         Ok(bool) => bool,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error creating config path: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error creating config path: {}", e);
             return;
         }
@@ -89,7 +110,13 @@ pub fn save_config(app_handle: tauri::AppHandle, config: &str) {
 
     match fs::write(config_path, config) {
         Ok(_) => (),
-        Err(e) => log::error!("Error writing config file: {}", e),
+        Err(e) => {
+            sentry::capture_message(
+                &format!("Error writing config file: {}", e.to_string()),
+                sentry::Level::Error,
+            );
+            log::error!("Error writing config file: {}", e);
+        }
     }
 }
 
@@ -110,11 +137,23 @@ pub fn get_zip_file_paths(folder: &Path) -> Vec<PathBuf> {
                                 zip_paths.push(path);
                             }
                         }
-                        Err(e) => log::error!("Error reading entry: {}", e),
+                        Err(e) => {
+                            sentry::capture_message(
+                                &format!("Error reading entry: {}", e.to_string()),
+                                sentry::Level::Error,
+                            );
+                            log::error!("Error reading entry: {}", e);
+                        }
                     }
                 }
             }
-            Err(e) => log::error!("Error reading directory: {}", e),
+            Err(e) => {
+                sentry::capture_message(
+                    &format!("Error reading directory: {}", e.to_string()),
+                    sentry::Level::Error,
+                );
+                log::error!("Error reading directory: {}", e);
+            }
         }
     }
     zip_paths
@@ -140,6 +179,10 @@ pub fn create_zip_archive(
             let relative_path = match entry_path.strip_prefix(&path) {
                 Ok(path) => path,
                 Err(e) => {
+                    sentry::capture_message(
+                        &format!("Error stripping prefix: {}", e.to_string()),
+                        sentry::Level::Error,
+                    );
                     log::error!("Error stripping prefix: {}", e);
                     continue;
                 }
@@ -148,6 +191,10 @@ pub fn create_zip_archive(
             match zip_writer.start_file(relative_path.to_str().unwrap(), options) {
                 Ok(_) => (),
                 Err(e) => {
+                    sentry::capture_message(
+                        &format!("Error starting file in zip: {}", e.to_string()),
+                        sentry::Level::Error,
+                    );
                     log::error!("Error starting file in zip: {}", e);
                     continue;
                 }
@@ -155,6 +202,10 @@ pub fn create_zip_archive(
             match zip_writer.write_all(&std::fs::read(entry_path)?) {
                 Ok(_) => (),
                 Err(e) => {
+                    sentry::capture_message(
+                        &format!("Error writing file to zip: {}", e.to_string()),
+                        sentry::Level::Error,
+                    );
                     log::error!("Error writing file to zip: {}", e);
                     continue;
                 }
@@ -176,6 +227,10 @@ pub fn convert_xml_to_json(xml: &str) -> JsonValue {
     match json_builder.build_from_xml(xml) {
         Ok(json_str) => json_str.into(),
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error building JSON from XML: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error building JSON from XML: {}", e);
             return JsonValue::Null;
         }
@@ -190,6 +245,11 @@ pub fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
     let path = match app.path().resolve(dir, BaseDirectory::Document) {
         Ok(p) => p,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error resolving path: {}", e.to_string()),
+                sentry::Level::Error,
+            );
+
             log::error!("Error resolving path: {}", e);
 
             return JsonValue::Null;
@@ -237,6 +297,13 @@ pub async fn read_files_as_zip(app: AppHandle, path: String, filename: String) -
     {
         Ok(p) => p,
         Err(e) => {
+            sentry::capture_message(
+                &format!(
+                    "Error reading the files at the specified path: {}",
+                    e.to_string()
+                ),
+                sentry::Level::Error,
+            );
             log::error!(
                 "Error reading the files at the specified path {}: {}",
                 path,
@@ -258,6 +325,13 @@ pub async fn read_files_as_zip(app: AppHandle, path: String, filename: String) -
     {
         Ok(p) => p,
         Err(e) => {
+            sentry::capture_message(
+                &format!(
+                    "Error creating a zip path in AppLocalData: {}",
+                    e.to_string()
+                ),
+                sentry::Level::Error,
+            );
             log::error!("Error creating a zip path in AppLocalData: {}", e);
             return JsonValue::Null;
         }
@@ -271,6 +345,10 @@ pub async fn read_files_as_zip(app: AppHandle, path: String, filename: String) -
     match create_zip_archive(doc_path, file_path) {
         Ok(json_str) => json_str.into(),
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error creating zip archive: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error creating zip archive: {}", e);
             return JsonValue::Null;
         }
@@ -288,6 +366,10 @@ pub fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> 
     let file = match File::open(&path_to_zip) {
         Ok(file) => file,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error opening zip file: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error opening zip file: {}", e);
             return None;
         }
@@ -296,6 +378,10 @@ pub fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> 
     let mut archive = match ZipArchive::new(BufReader::new(file)) {
         Ok(archive) => archive,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error reading zip archive: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error reading zip archive: {}", e);
             return None;
         }
@@ -305,6 +391,10 @@ pub fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> 
         let mut file = match archive.by_index(i) {
             Ok(file) => file,
             Err(e) => {
+                sentry::capture_message(
+                    &format!("Error accessing file in zip archive: {}", e.to_string()),
+                    sentry::Level::Error,
+                );
                 log::error!("Error accessing file in zip archive: {}", e);
                 continue;
             }
@@ -314,6 +404,10 @@ pub fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> 
             if name.to_str() == Some(filename) {
                 let mut contents = String::new();
                 if let Err(e) = file.read_to_string(&mut contents) {
+                    sentry::capture_message(
+                        &format!("Error reading file content: {}", e.to_string()),
+                        sentry::Level::Error,
+                    );
                     log::error!("Error reading file content: {}", e);
                     return None;
                 }

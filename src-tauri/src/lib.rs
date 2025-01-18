@@ -80,6 +80,10 @@ fn start_farming_simulator_25(app: AppHandle) {
     match app.emit("process-started", ()) {
         Ok(_) => {}
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error emitting process-started event: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error emitting process-started event: {}", e);
         }
     };
@@ -92,13 +96,25 @@ fn check_process(app: &AppHandle) {
         }
         match app.emit("process-running", ()) {
             Ok(_) => (),
-            Err(e) => log::error!("Error emitting process-running event: {}", e),
+            Err(e) => {
+                sentry::capture_message(
+                    &format!("Error emitting process-running event: {}", e.to_string()),
+                    sentry::Level::Error,
+                );
+                log::error!("Error emitting process-running event: {}", e);
+            }
         }
     } else {
         if unsafe { PROCESS_RUNNING } == true {
             match app.emit("process-exited", ()) {
                 Ok(_) => (),
-                Err(e) => log::error!("Error emitting process-exited event: {}", e),
+                Err(e) => {
+                    sentry::capture_message(
+                        &format!("Error emitting process-exited event: {}", e.to_string()),
+                        sentry::Level::Error,
+                    );
+                    log::error!("Error emitting process-exited event: {}", e);
+                }
             }
             unsafe {
                 PROCESS_EXITED = true;
@@ -109,7 +125,16 @@ fn check_process(app: &AppHandle) {
         }
         match app.emit("process-not-running", ()) {
             Ok(_) => (),
-            Err(e) => log::error!("Error emitting process-not-running event: {}", e),
+            Err(e) => {
+                sentry::capture_message(
+                    &format!(
+                        "Error emitting process-not-running event: {}",
+                        e.to_string()
+                    ),
+                    sentry::Level::Error,
+                );
+                log::error!("Error emitting process-not-running event: {}", e);
+            }
         }
     }
 }

@@ -6,6 +6,7 @@ use crate::{
 use serde_json::Value as JsonValue;
 use std::path::Path;
 use tauri::{path::BaseDirectory, Manager};
+use tauri_plugin_sentry::sentry;
 
 // Returns an array of metadata of all mods
 #[tauri::command]
@@ -18,6 +19,10 @@ pub fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
     ) {
         Ok(path) => path,
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error creating zip archive: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error creating zip archive: {}", e);
             return JsonValue::Null;
         }
@@ -33,6 +38,10 @@ pub fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
     match parse_mod_desc_files(doc_path) {
         Ok(mods) => mods.into(),
         Err(e) => {
+            sentry::capture_message(
+                &format!("Error building JSON from XML: {}", e.to_string()),
+                sentry::Level::Error,
+            );
             log::error!("Error building JSON from XML: {}", e);
             return JsonValue::Null;
         }
@@ -71,6 +80,7 @@ pub fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
         let titles = match json.get("modDesc").and_then(|md| md.get("title")) {
             Some(title) => title.clone(),
             None => {
+                sentry::capture_message("Error: title not found in modDesc", sentry::Level::Error);
                 log::error!("Error: title not found in modDesc");
                 return Err(JsonValue::Null);
             }
@@ -84,11 +94,19 @@ pub fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
                 Some(version) => match version.as_array() {
                     Some(array) => array[0].to_string().replace('"', ""),
                     None => {
+                        sentry::capture_message(
+                            "Error: version is not an array",
+                            sentry::Level::Error,
+                        );
                         log::error!("Error: version is not an array");
                         return Err(JsonValue::Null);
                     }
                 },
                 None => {
+                    sentry::capture_message(
+                        "Error: version not found in modDesc",
+                        sentry::Level::Error,
+                    );
                     log::error!("Error: version not found in modDesc");
                     return Err(JsonValue::Null);
                 }
@@ -97,6 +115,14 @@ pub fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
         match serde_json::to_value(r#mod) {
             Ok(mod_json) => mods.push(mod_json),
             Err(e) => {
+                sentry::capture_message(
+                    &format!("Error serializing mod: {}", e.to_string()),
+                    sentry::Level::Error,
+                );
+                sentry::capture_message(
+                    &format!("Error serializing mod: {}", e.to_string()),
+                    sentry::Level::Error,
+                );
                 log::error!("Error serializing mod: {}", e);
                 return Err(JsonValue::Null);
             }
