@@ -24,6 +24,12 @@ pub fn read_mod_desc_files(app_handle: tauri::AppHandle) -> JsonValue {
     };
 
     let doc_path = binding.as_path();
+
+    if !doc_path.exists() {
+        log::error!("DocPath to be read does not exist: {:?}", doc_path);
+        return JsonValue::Null;
+    }
+
     match parse_mod_desc_files(doc_path) {
         Ok(mods) => mods.into(),
         Err(e) => {

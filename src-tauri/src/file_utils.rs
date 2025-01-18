@@ -196,6 +196,11 @@ pub fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
         }
     };
 
+    if !path.exists() {
+        log::error!("Path does not exist: {:?}", path);
+        return JsonValue::Null;
+    }
+
     let mut savegame_folders = Vec::<String>::new();
 
     for entry in WalkDir::new(&path)
@@ -242,6 +247,11 @@ pub async fn read_files_as_zip(app: AppHandle, path: String, filename: String) -
     }
     .join(filename.to_string());
 
+    if !doc_path.exists() {
+        log::error!("DocPath to be read does not exist: {:?}", doc_path);
+        return JsonValue::Null;
+    }
+
     let file_path = match app
         .path()
         .resolve(format!("{}.zip", filename), BaseDirectory::AppLocalData)
@@ -252,6 +262,11 @@ pub async fn read_files_as_zip(app: AppHandle, path: String, filename: String) -
             return JsonValue::Null;
         }
     };
+
+    if !file_path.exists() {
+        log::info!("File to be read as zip does not exist: {:?}", file_path);
+        return JsonValue::Null;
+    }
 
     match create_zip_archive(doc_path, file_path) {
         Ok(json_str) => json_str.into(),
@@ -264,6 +279,11 @@ pub async fn read_files_as_zip(app: AppHandle, path: String, filename: String) -
 
 pub fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> {
     log::info!("read_file_in_zip {:?} {:?}", path_to_zip, filename);
+
+    if !path_to_zip.exists() {
+        log::error!("File to be read in zip does not exist: {:?}", path_to_zip);
+        return None;
+    }
 
     let file = match File::open(&path_to_zip) {
         Ok(file) => file,

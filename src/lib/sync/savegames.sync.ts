@@ -218,7 +218,11 @@ export async function uploadSavegame(saveGame: Savegame, t: TFnType<DefaultParam
       const remoteSavegameNames = (await remoteSavegames.current()).map(r => parseInt(r.key.split("/").pop()?.replace("savegame", "")?.replace(".zip", "") ?? "1"));
 
       const newSavegameId = Math.max(...remoteSavegameNames, 0) + 1;
-      remoteSavegameId = `savegame${newSavegameId}.zip`;
+      const teamId = get(config).teamId;
+      if (teamId == null) {
+        throw new Error("No teamId found in config");
+      }
+      remoteSavegameId = `${teamId}/savegames/savegame${newSavegameId}.zip`;
     }
 
     const savegameBuffer = await getSavegameFilesForUpload(saveGame.id);

@@ -21,6 +21,11 @@ pub fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> Jso
         }
     };
 
+    if !dir_path.exists() {
+        log::error!("DirPath to be unwrapped does not exist: {:?}", dir_path);
+        return JsonValue::Null;
+    }
+
     match unwrap_savegame(data, dir_path.as_path()) {
         Ok(bool) => bool.into(),
         Err(e) => {
@@ -42,8 +47,17 @@ pub fn parse_local_savegame_data(app: AppHandle, savegame_path: &str) -> JsonVal
         }
     };
 
+    if !savegame_path.exists() {
+        log::error!("savegame_path does not exist: {:?}", savegame_path);
+        return JsonValue::Null;
+    }
+
     let career_path = savegame_path.join("careerSavegame.xml");
-    let farms_path = savegame_path.join("farms.xml");
+
+    if !career_path.exists() {
+        log::error!("career_path does not exist: {:?}", career_path);
+        return JsonValue::Null;
+    }
 
     let career_file = match File::open(&career_path) {
         Ok(file) => file,
@@ -52,14 +66,6 @@ pub fn parse_local_savegame_data(app: AppHandle, savegame_path: &str) -> JsonVal
             return JsonValue::Null;
         }
     };
-    let farms_file = match File::open(&farms_path) {
-        Ok(file) => file,
-        Err(e) => {
-            log::error!("Error opening farms file: {}", e);
-            return JsonValue::Null;
-        }
-    };
-
     log::info!("career_file");
     let career_data: CareerSavegame = match serde_xml_rs::from_reader(career_file) {
         Ok(data) => data,
@@ -68,6 +74,22 @@ pub fn parse_local_savegame_data(app: AppHandle, savegame_path: &str) -> JsonVal
             return JsonValue::Null;
         }
     };
+
+    let farms_path = savegame_path.join("farms.xml");
+
+    if !farms_path.exists() {
+        log::error!("farms_path does not exist: {:?}", farms_path);
+        return JsonValue::Null;
+    }
+
+    let farms_file = match File::open(&farms_path) {
+        Ok(file) => file,
+        Err(e) => {
+            log::error!("Error opening farms file: {}", e);
+            return JsonValue::Null;
+        }
+    };
+
     log::info!("farms_file");
     let farms_data: Farms = match serde_xml_rs::from_reader(farms_file) {
         Ok(data) => data,
