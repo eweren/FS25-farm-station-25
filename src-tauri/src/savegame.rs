@@ -26,11 +26,6 @@ pub fn unwrap_and_save_savegame(app: AppHandle, data: Vec<u8>, dir: &str) -> Jso
         }
     };
 
-    if !dir_path.exists() {
-        log::error!("DirPath to be unwrapped does not exist: {:?}", dir_path);
-        return JsonValue::Null;
-    }
-
     match unwrap_savegame(data, dir_path.as_path()) {
         Ok(bool) => bool.into(),
         Err(e) => {

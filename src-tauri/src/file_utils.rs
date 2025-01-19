@@ -337,11 +337,6 @@ pub async fn read_files_as_zip(app: AppHandle, path: String, filename: String) -
         }
     };
 
-    if !file_path.exists() {
-        log::info!("File to be read as zip does not exist: {:?}", file_path);
-        return JsonValue::Null;
-    }
-
     match create_zip_archive(doc_path, file_path) {
         Ok(json_str) => json_str.into(),
         Err(e) => {
