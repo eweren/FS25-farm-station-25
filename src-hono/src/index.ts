@@ -9,7 +9,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use(
   '*',
   cors({
-    origin: ['http://tauri.localhost', 'http://localhost:1420'],
+    origin: ['http://tauri.localhost', 'http://localhost:1420', "*"],
   })
 );
 

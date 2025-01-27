@@ -11,7 +11,6 @@ use file_utils::{
 };
 use mods::read_mod_desc_files;
 use savegame::{parse_local_savegame_data, unwrap_and_save_savegame};
-use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use std::process::Command;
 use std::time::Duration;
@@ -26,20 +25,6 @@ static PROCESS_NAME: &str = "FarmingSimulator2025Game.exe";
 // Asserts default windows installation path
 static PROCESS_PATH: &str =
     r"C:\Program Files (x86)\Farming Simulator 2025\FarmingSimulator2025.exe";
-
-#[derive(Serialize, Deserialize, Debug)]
-struct ModDesc {
-    filename: String,
-    version: String,
-    mod_name: String,
-    titles: JsonValue,
-}
-
-impl Into<JsonValue> for ModDesc {
-    fn into(self) -> JsonValue {
-        serde_json::to_value(self).unwrap()
-    }
-}
 
 // Returns the version number from the cargo.toml
 #[tauri::command]
@@ -68,7 +53,7 @@ async fn watch_farming_simulator_25(app: AppHandle) {
 
 // Starts FS25
 #[tauri::command]
-fn start_farming_simulator_25(app: AppHandle) {
+async fn start_farming_simulator_25(app: AppHandle) {
     log::info!("start_farming_simulator_25");
     if let Some(_process_id) = get_process_id(PROCESS_NAME) {
         return;

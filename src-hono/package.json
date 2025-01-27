@@ -1,7 +1,7 @@
 {
   "name": "r2_new",
   "scripts": {
-    "dev": "wrangler dev",
+    "dev": "wrangler dev --remote",
     "deploy": "wrangler deploy --minify"
   },
   "dependencies": {

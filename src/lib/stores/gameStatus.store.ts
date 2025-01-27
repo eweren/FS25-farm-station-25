@@ -1,11 +1,11 @@
 import { listen } from '@tauri-apps/api/event';
 import { writable, get } from "svelte/store";
 import { changePlayState, watchFarmingSimulator } from '../sync/utils';
-import { processingSavegames, savegamesWithRemote } from './savegamesAndMods.store';
+import { localSavegames, processingSavegames, remoteSavegames, savegamesWithRemote } from './savegamesAndMods.store';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
 import { getCurrentWindow, UserAttentionType } from '@tauri-apps/api/window';
 import { toast } from 'svelte-sonner';
-import { syncSavegame } from '../sync/savegames.sync';
+import { getSavegamesFromDir, syncSavegame } from '../sync/savegames.sync';
 import { info } from '@tauri-apps/plugin-log';
 
 export enum GameStatus {
@@ -55,10 +55,16 @@ const createGameStatusStore = () => {
 
       const window = getCurrentWindow();
       await window.requestUserAttention(UserAttentionType.Informational);
-      await window.unminimize()
+
+      await new Promise(res => setTimeout(res, 1000));
+      await window.unminimize();
       await window.setFocus();
-      const autoSyncableSavegames = get(savegamesWithRemote);
+
+      const savegames = (await getSavegamesFromDir()) ?? [];
+      localSavegames.set(savegames);
+      await remoteSavegames.current();
       await new Promise(res => setTimeout(res, 1000))
+      const autoSyncableSavegames = get(savegamesWithRemote);
 
       for (const savegame of autoSyncableSavegames) {
         processingSavegames.add(savegame.id);

@@ -6,7 +6,11 @@
     processingMods,
   } from "../stores/savegamesAndMods.store";
   import type { Mod } from "../types/mod";
-  import { getTitleFromMod, syncMod } from "../sync/mods.sync";
+  import {
+    getDescriptionFromMod,
+    getTitleFromMod,
+    syncMod,
+  } from "../sync/mods.sync";
 
   const { t } = getTranslate();
 
@@ -14,11 +18,22 @@
   export let type: "sync" | "local" | "remote";
 
   $: title = $t("back") ? getTitleFromMod(mod) : mod.modName;
+  $: description = $t("back") ? getDescriptionFromMod(mod) : null;
 </script>
 
 <Table.Row>
   <Table.Cell class="min-w-full">
-    {title}
+    <div class="flex flex-col items-start justify-start">
+      <span>{title}</span>
+      {#if description && description !== title}
+        <span
+          title={description}
+          class="description line-clamp-2 text-ellipsis overflow-hidden text-foreground text-xs"
+        >
+          {description}</span
+        >
+      {/if}
+    </div>
   </Table.Cell>
   <Table.Cell class="min-w-full">
     {mod.version}
@@ -32,8 +47,16 @@
       onclick={async () => {
         await syncMod(mod, $t);
       }}
-      title={$t("sync_mod")}
-      aria-label={$t("sync_mod")}
+      title={type === "sync"
+        ? $t("sync_mod")
+        : type === "local"
+          ? $t("upload_mod")
+          : $t("download_mod")}
+      aria-label="{type === 'sync'
+        ? $t('sync_mod')
+        : type === 'local'
+          ? $t('upload_mod')
+          : $t('download_mod')}}"
     >
       {#if processingMods.has(mod.modName)}
         <span
@@ -53,5 +76,8 @@
 <style>
   button.btn-primary {
     padding: 0.5rem;
+  }
+  .description {
+    max-width: calc(100vw - 16rem);
   }
 </style>

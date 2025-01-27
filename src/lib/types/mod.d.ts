@@ -1,7 +1,8 @@
 export type Mod = {
-  modName: `FS25_${string}`;
-  filename: `FS25_${string}.zip`;
-  titles: [{ [lang: string]: Array<string> }];
+  modName: string;
+  filename: string;
+  titles: [{ [lang: string]: Array<string> }] | null;
+  description: [{ [lang: string]: Array<string> }] | null;
   version: string;
   remoteFileName?: string;
   fileHash?: string;

@@ -270,7 +270,7 @@ pub fn get_folder_content(app: AppHandle, dir: &str) -> JsonValue {
         .filter(|e| e.file_type().is_dir())
     {
         let entry_path = entry.path();
-        let re = Regex::new(r"savegame\d+").unwrap();
+        let re = Regex::new(r"^savegame\d").unwrap();
         if re.is_match(entry_path.file_name().unwrap().to_str().unwrap()) {
             savegame_folders.push(
                 entry_path

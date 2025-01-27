@@ -136,8 +136,16 @@
           processingSavegames.delete(savegame.id);
         }
       }}
-      title={$t("sync_savegame")}
-      aria-label={$t("sync_savegame")}
+      title={type === "sync"
+        ? $t("sync_savegame")
+        : type === "local"
+          ? $t("upload_savegame")
+          : $t("download_savegame")}
+      aria-label="{type === 'sync'
+        ? $t('sync_savegame')
+        : type === 'local'
+          ? $t('upload_savegame')
+          : $t('download_savegame')}}"
     >
       {#if processingSavegames.has(savegame.id)}
         <span

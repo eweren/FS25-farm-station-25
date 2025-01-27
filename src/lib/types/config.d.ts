@@ -1,5 +1,5 @@
 export interface Config {
-  savegameMapping: Record<string, string>;
+  savegameMapping: { [localSavegameId: string]: string };
   gameDataDirectory: string;
   teamId?: string;
   inviteCode?: string;

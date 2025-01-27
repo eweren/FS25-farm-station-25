@@ -5,12 +5,16 @@ minify = true
 account_id = "d9ecce8bbe39fe364970386ffeb65967"
 
 r2_buckets = [
-  { binding = "LS25", bucket_name = "ls25", jurisdiction = "eu" }
+  { binding = "LS25", bucket_name = "ls25", jurisdiction = "eu", preview_bucket_name = "ls25" }
 ]
 
 
 kv_namespaces = [
-  { id = "dfc57538627b4f748a70030ccbba57f0", binding = "LS25DATA" }
+  { id = "dfc57538627b4f748a70030ccbba57f0", binding = "LS25DATA", preview_id = "dfc57538627b4f748a70030ccbba57f0" }
+]
+
+d1_databases = [
+  { binding = "DB", database_name = "farm-station", database_id = "1d224a0e-2e60-4491-ab5d-7ebb936b0af8", preview_database_id = "1d224a0e-2e60-4491-ab5d-7ebb936b0af8" }
 ]
 
 

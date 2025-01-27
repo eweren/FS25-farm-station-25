@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import { BaseDirectory, readFile, writeFile } from '@tauri-apps/plugin-fs';
-import { localMods, localOnlyMods, processingAllMods, processingMods, remoteMods } from '../stores/savegamesAndMods.store';
+import { localMods, allLocalMods, processingAllMods, processingMods, remoteMods } from '../stores/savegamesAndMods.store';
 import { get } from 'svelte/store';
 import { toast } from 'svelte-sonner';
 import { type DefaultParamType, type TFnType, type TranslationKey } from '@tolgee/svelte';
@@ -16,7 +16,7 @@ import { config } from '../stores/config.store';
  * @param mod the mod to get the title from
  * @returns either the title in current locale, or the first present title, or the modname or "Unknown"
  */
-export const getTitleFromMod = (mod: Mod) => {
+export const getTitleFromMod = (mod: Pick<Mod, "titles" | "modName">) => {
   if (mod.titles) {
     const lang = get(currentLanguage);
     const title = mod.titles.find(t => typeof t === "object" ? lang in t : t)?.[lang]?.[0] ?? Object.values(mod.titles?.[0])?.[0]?.[0] ?? mod.modName;
@@ -29,11 +29,27 @@ export const getTitleFromMod = (mod: Mod) => {
 }
 
 /**
+ * Takes a mod and returns its title in the current language. If no title exists, it returns the default name of the mod. 
+ * @param mod the mod to get the title from
+ * @returns either the title in current locale, or the first present title, or the modname or "Unknown"
+ */
+export const getDescriptionFromMod = (mod: Mod) => {
+  if (mod.description) {
+    const lang = get(currentLanguage);
+    const description = mod.description?.find(t => typeof t === "object" ? lang in t : t)?.[lang]?.[0] ?? Object.values(mod.description?.[0])?.[0]?.[0] ?? null
+    return description?.trim();
+  } else {
+    return "";
+  }
+}
+
+/**
  * Get all local mods. Invoves a rust backend function that loads and reads all the mod description files.
  * @returns an array of local mods. Each mod is an object with properties such as `mod_name`, `description`, and `author`.
  */
 export async function getLocalMods() {
-  const modFiles: Array<Mod> = ((await invoke("read_mod_desc_files")) as Array<Mod & { mod_name: `FS25_${string}` }>).map(e => ({ ...e, modName: e.mod_name })).sort((a, b) => a.modName.localeCompare(b.modName));
+  const data = ((await invoke("read_mod_desc_files")) as Array<Mod>);
+  const modFiles: Array<Mod> = data?.sort((a, b) => a.modName.localeCompare(b.modName));
   const modMap = new Map<string, Mod>();
   for (const modFile of modFiles) {
     modMap.set(modFile.modName + modFile.version, modFile);
@@ -95,7 +111,7 @@ export async function getModsFromRemote() {
  */
 export async function uploadAllMods(t: TFnType<DefaultParamType, string, TranslationKey>) {
   try {
-    const locMods = get(localOnlyMods);
+    const locMods = get(allLocalMods);
     if (locMods.length === 0) {
       return;
     }
@@ -217,6 +233,8 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
       return;
     }
 
+    processingMods.add(mod.modName);
+
     const data = await fetch(
       `${protocol}://${baseDomain}/${key}`,
       {
@@ -229,8 +247,15 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
       baseDir: BaseDirectory.Document,
     });
 
-    await getLocalMods();
+    localMods.update((mods) => {
+      mods.set(mod.modName + mod.version, mod);
+      return new Map(mods);
+    })
+
+    processingMods.add(mod.modName);
+
     toast.dismiss(toastNr);
+    toast.success(t("download_mod_completed", { mod: getTitleFromMod(mod) }));
   } catch (e) {
     toast(t("error"), { duration: 5000 });
     error(`Error downloading mod: ${e}`);

@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use ts_rs::TS;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -64,4 +65,28 @@ pub struct ModDescExtraSourceFiles {
 #[derive(TS)]
 pub struct ModDescExtraSourceFile {
     filename: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CachedModDescriptions {
+    pub mods: Vec<CachedModDesc>,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct CachedModDesc {
+    pub mods: SimplifiedModDesc,
+    pub filename: String,
+    pub modified_at: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct SimplifiedModDesc {
+    pub filename: String,
+    pub version: String,
+    pub mod_name: String,
+    pub titles: Value,
+    pub description: Value,
 }

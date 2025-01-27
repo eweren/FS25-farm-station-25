@@ -8,7 +8,7 @@ import { getFS25Dir, getTeamHeader } from './shared.sync';
 import { downloadMod, getTitleFromMod, uploadMod } from './mods.sync';
 import { protocol, baseDomain, saveConfig } from './utils';
 import { config } from '../stores/config.store';
-import { remoteOnlyMods, localOnlyMods, remoteMods } from '../stores/savegamesAndMods.store';
+import { remoteModsFromSavegames, allLocalMods, remoteMods } from '../stores/savegamesAndMods.store';
 import { error, info } from '@tauri-apps/plugin-log';
 import type { CareerSavegame } from '../genTypes/CareerSavegame';
 import type { ListObjectResponse } from '../types/listObjectResponse';
@@ -110,6 +110,7 @@ export async function getSavegamesFromDir() {
       map: loadedSavegame.settings.mapTitle,
       mods: loadedSavegame.mod?.map((mod) => ({
         filename: `${mod.modName}.zip` as `FS25_${string}.zip`,
+        description: [{ en: [] }],
         modName: mod.modName as `FS25_${string}`,
         version: mod.version,
         titles: [{ en: [mod.title] }],
@@ -340,8 +341,8 @@ export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<Default
   let toastNr;
 
   if (saveGame) {
-    const onlyRemoteMods = saveGame.mods.filter(m => get(remoteOnlyMods).some(mod => m.filename === m.filename && m.version === mod.version));
-    const onlyLocalMods = saveGame.mods.filter(m => get(localOnlyMods).some(mod => m.filename === m.filename && m.version === mod.version));
+    const onlyRemoteMods = saveGame.mods.filter(m => get(remoteModsFromSavegames).some(mod => m.filename === m.filename && m.version === mod.version));
+    const onlyLocalMods = saveGame.mods.filter(m => get(allLocalMods).some(mod => m.filename === m.filename && m.version === mod.version));
     if (onlyRemoteMods.length > 0) {
       for (const mod of onlyRemoteMods) {
         const remMod = get(remoteMods).get(mod.modName + mod.version);

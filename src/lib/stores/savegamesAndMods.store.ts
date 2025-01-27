@@ -51,21 +51,21 @@ export const remoteMods = (() => {
 })();
 
 /** An array of all mods that are only on the remote server and linked in any of the savegames */
-export const remoteOnlyMods = derived([localSavegames, localMods, remoteMods], ([localSavegames, localMods, remoteMods]) => {
-  const uniqueMods = new Set(localSavegames.flatMap(s => s.mods.map(mod => mod.modName + mod.version)).filter((mod) => mod.startsWith("FS25_") && !localMods.has(mod)));
-  const mods = [...Array.from(uniqueMods).map(mod => remoteMods.get(mod) ?? null).filter(m => !!m)].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
+export const remoteModsFromSavegames = derived([localSavegames, localMods, remoteMods], ([localSavegames, localMods, remoteMods]) => {
+  const uniqueOnlyRemoteMods = new Set(localSavegames.flatMap(s => s.mods.map(mod => mod.modName + mod.version)).filter((mod) => mod.startsWith("FS25_") && !localMods.has(mod)));
+  const mods = [...Array.from(uniqueOnlyRemoteMods).map(mod => remoteMods.get(mod) ?? null).filter(m => !!m)].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
   return mods;
 });
 
 /** An array of all mods that are only on the remote server and not used in any savegame */
-export const remoteOnlyModsNotPresenInSavegames = derived([localSavegames, localMods, remoteMods], ([localSavegames, localMods, remoteMods]) => {
+export const otherRemoteMods = derived([localSavegames, localMods, remoteMods], ([localSavegames, localMods, remoteMods]) => {
   const localModKeys = Array.from(localMods.keys());
   const mods = Array.from(remoteMods).filter(m => !localModKeys.includes(m[0])).map(m => m[1]).sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
   return mods;
 });
 
 /** An array of all mods that are only on the local server */
-export const localOnlyMods = derived([localMods, remoteMods], ([localMods, remoteMods]) => {
+export const allLocalMods = derived([localMods, remoteMods], ([localMods, remoteMods]) => {
   const mods = [...Array.from(localMods.values()).filter(mod => !remoteMods.has(mod.modName + mod.version))].sort((a, b) => getTitleFromMod(a).localeCompare(getTitleFromMod(b)));
   return mods;
 });
