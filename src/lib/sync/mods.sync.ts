@@ -37,7 +37,7 @@ export const getDescriptionFromMod = (mod: Mod) => {
   if (mod.description) {
     const lang = get(currentLanguage);
     const description = mod.description?.find(t => typeof t === "object" ? lang in t : t)?.[lang]?.[0] ?? Object.values(mod.description?.[0])?.[0]?.[0] ?? null
-    return description?.trim();
+    return description?.trim() ?? "";
   } else {
     return "";
   }
@@ -54,6 +54,8 @@ export async function getLocalMods() {
   for (const modFile of modFiles) {
     modMap.set(modFile.modName + modFile.version, modFile);
   }
+
+  console.log(modMap);
 
   localMods.set(modMap);
 

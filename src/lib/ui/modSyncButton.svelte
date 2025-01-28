@@ -5,7 +5,7 @@
     processingAllMods,
     processingMods,
   } from "../stores/savegamesAndMods.store";
-  import { downloadMod, syncMod, uploadMod } from "../sync/mods.sync";
+  import { downloadMod, uploadMod } from "../sync/mods.sync";
   import type { Mod } from "../types/mod";
   import * as Tooltip from "$lib/components/ui/tooltip";
 
@@ -24,11 +24,13 @@
         type === "both" ||
         $processingAllMods}
       onclick={async () => {
+        processingMods.add(mod.modName);
         if (type === "local") {
           await uploadMod(mod, $t);
         } else if (type === "remote" && mod.remoteFileName) {
           await downloadMod(mod.remoteFileName, mod, $t);
         }
+        processingMods.delete(mod.modName);
       }}
       aria-label={type === "both"
         ? $t("sync_mod")

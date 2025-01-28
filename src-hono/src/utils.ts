@@ -5,6 +5,7 @@ import { HTTPException } from 'hono/http-exception';
 export type Bindings = {
   LS25: R2Bucket
   LS25DATA: KVNamespace
+  DB: D1Database
 }
 
 /** Array of random farming related words */

@@ -224,19 +224,17 @@
           <Tabs.Trigger value="mods"><T keyName="mods" /></Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="savegames">
-          <div class="savegames">
-            {#if $localSavegames == null || $remoteSavegames == null}
-              <p>
-                <T keyName="savegames_loading" />
-              </p>
-            {:else if $localSavegames.length === 0 && $remoteSavegames.length === 0}
-              <p>
-                <T keyName="savegames_no_found" />
-              </p>
-            {:else}
-              <SavegameTable />
-            {/if}
-          </div>
+          {#if $localSavegames == null || $remoteSavegames == null}
+            <p>
+              <T keyName="savegames_loading" />
+            </p>
+          {:else if $localSavegames.length === 0 && $remoteSavegames.length === 0}
+            <p>
+              <T keyName="savegames_no_found" />
+            </p>
+          {:else}
+            <SavegameTable />
+          {/if}
         </Tabs.Content>
         <Tabs.Content value="mods">
           {#if $localSavegames == null || $remoteSavegames == null}

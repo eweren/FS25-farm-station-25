@@ -373,6 +373,9 @@ pub fn read_file_in_zip(path_to_zip: PathBuf, filename: &str) -> Option<String> 
     let mut archive = match ZipArchive::new(BufReader::new(file)) {
         Ok(archive) => archive,
         Err(e) => {
+            if e.to_string().contains("invalid Zip archive") {
+                return None;
+            }
             sentry::capture_message(
                 &format!("Error reading zip archive: {}", e.to_string()),
                 sentry::Level::Error,

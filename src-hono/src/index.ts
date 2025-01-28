@@ -3,6 +3,25 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { Bindings, getRandomEntries, getSharedDataFromHeaders, landwirtschaftArray } from './utils';
 import { HTTPException } from 'hono/http-exception';
+import { initDbConnect } from './db';
+import { mods } from './db/schema';
+
+export type Mod = {
+  modName: string;
+  filename: string;
+  titles: [{ [lang: string]: Array<string> }] | null;
+  description: [{ [lang: string]: Array<string> }] | null;
+  version: string;
+  remoteFileName?: string;
+  fileHash?: string;
+}
+
+export type ModResponse = {
+  key: string,
+  size: number,
+  uploaded: string,
+  modInfo: Mod
+}
 
 const app = new Hono<{ Bindings: Bindings }>();
 
@@ -37,28 +56,11 @@ app.get('/_playerStatus', async (context) => {
 
 app.get('/_mods', async (context) => {
   await getSharedDataFromHeaders(context, true);
-  const options: R2ListOptions = { prefix: "_mods", limit: 500, include: ["customMetadata"] };
-  let listed = await context.env.LS25.list(options);
+  const db = initDbConnect(context.env.DB);
 
-  let truncated = listed.truncated;
-  let cursor = listed.truncated ? listed.cursor : undefined;
+  const allModsInDb = (await db.select().from(mods).all()).map(m => ({ key: m.id, uploaded: m.uploaded, size: m.size, modInfo: { ...m, titles: JSON.parse(m.title), description: JSON.parse(m.description) } }) as ModResponse);
 
-  while (truncated) {
-    const next = await context.env.LS25.list({
-      ...options,
-      cursor: cursor,
-    });
-    listed.objects.push(...next.objects);
-
-    truncated = next.truncated;
-    cursor = next.truncated ? next.cursor : undefined;
-  }
-
-  if (listed.objects === null) {
-    return context.json([]);
-  }
-
-  return context.json(listed.objects.map((o) => ({ key: o.key, uploaded: o.uploaded, size: o.size, modInfo: JSON.parse(o.customMetadata?.modInfo ?? "{}") })));
+  return context.json(allModsInDb);
 });
 
 app.get('/_mods/:mod', async (context) => {
@@ -214,7 +216,7 @@ app.put('/:teamId/savegames/:savegame', async (context) => {
 });
 
 app.put('/:modId', async (context) => {
-  const { teamId } = await getSharedDataFromHeaders(context, true);
+  await getSharedDataFromHeaders(context, true);
 
   const modId = context.req.param("modId");
 
@@ -239,6 +241,21 @@ app.put('/:modId', async (context) => {
     const res2 = await context.env.LS25.put(`_mods/${modId}___${JSON.parse(modInfo).version}`, file, {
       customMetadata: { modInfo }
     });
+
+    const mod = JSON.parse(modInfo) as Mod
+
+    const db = initDbConnect(context.env.DB);
+    await db.insert(mods).values({
+      modName: mod.modName,
+      fileHash: mod.fileHash ?? res2.checksums.toJSON().md5 ?? "",
+      id: modId,
+      title: JSON.stringify(mod.titles),
+      description: JSON.stringify(mod.description),
+      version: mod.version,
+      filename: file.name,
+      size: file.size,
+      uploaded: new Date().toISOString()
+    }).onConflictDoNothing();
     return context.json({ status: "success" });
 
   } catch (err) {

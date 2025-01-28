@@ -272,7 +272,7 @@
 <div class="flex flex-col">
   <div class="flex items-center md:self-end py-4 self-stretch">
     <Input
-      class="md:max-w-sm min-w-[40vw] w-full skew-x-0 h-10"
+      class="md:max-w-sm min-w-[40vw] w-full skew-x-0 h-10 overflow-visible"
       placeholder={$t("search")}
       type="text"
       bind:value={$filterValue}

@@ -88,9 +88,12 @@ pub fn parse_mod_desc_files(folder: &Path) -> Result<JsonValue, JsonValue> {
 
     let files = get_zip_file_paths(folder);
 
+    println!("Found {} files", files.len());
+    println!("Cached mods: {}", cached_mod_desc.mods.len());
+
     let mut mods: Vec<JsonValue> = vec![];
     for entry in files {
-        // Find entry of cached_mod_desc where filename matches entry
+        // // Find entry of cached_mod_desc where filename matches entry
         let cached_mod = cached_mod_desc
             .mods
             .iter()

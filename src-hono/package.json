@@ -5,6 +5,8 @@
     "deploy": "wrangler deploy --minify"
   },
   "dependencies": {
+    "drizzle-kit": "^0.30.3",
+    "drizzle-orm": "^0.39.0",
     "hono": "^4.6.16"
   },
   "devDependencies": {
