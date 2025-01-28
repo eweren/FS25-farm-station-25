@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "Autostart ist deaktiviert",
+  "activate_autostart_action": "Starten mit Windows aktivieren",
   "already_synced": "Bereits aktuell",
   "back": "Zurück",
   "cancel": "Abbrechen",
@@ -8,6 +10,8 @@
   "copy_path": "Pfad kopieren",
   "create": "Erstellen",
   "de": "Deutsch",
+  "deactivate_autostart": "Autostart ist aktiviert",
+  "deactivate_autostart_action": "Starten mit Windows deaktivieren",
   "download_mod": "Mod herunterladen",
   "download_mod_completed": "Mod {mod} erfolgreich heruntergeladen",
   "download_savegame": "Spielstand herunterladen",

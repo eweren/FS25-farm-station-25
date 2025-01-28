@@ -1,4 +1,5 @@
 {
+  "activate_autostart": "Le démarrage automatique est désactivé",
   "already_synced": "Déjà actuel",
   "back": "Dos",
   "cancel": "Annuler",
@@ -8,6 +9,8 @@
   "copy_path": "Copier le chemin",
   "create": "Créer",
   "de": "Allemand",
+  "deactivate_autostart": "Le démarrage automatique est activé",
+  "deactivate_autostart_action": "Désactiver le démarrage avec Windows",
   "download_mod": "Télécharger le module",
   "download_mod_completed": "Mod {mod} téléchargé avec succès",
   "download_savegame": "Télécharger la partition",

@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "Autostart is disabled",
+  "activate_autostart_action": "Enable Start with Windows",
   "already_synced": "Already synced",
   "back": "Back",
   "cancel": "Cancel",
@@ -8,6 +10,8 @@
   "copy_path": "Copy path",
   "create": "Create",
   "de": "German",
+  "deactivate_autostart": "Autostart is enabled",
+  "deactivate_autostart_action": "Disable Boot with Windows",
   "download_mod": "Download mod",
   "download_mod_completed": "Mod {mod} successfully downloaded",
   "download_savegame": "Download savegame",

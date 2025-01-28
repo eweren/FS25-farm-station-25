@@ -26,6 +26,7 @@
 <div class="flex flex-col items-start justify-start px-2">
   <T keyName="invite_code" />
   <button
+    data-umami-event="copy_invite_code"
     title={$t("copy")}
     aria-label={$t("copy")}
     on:click={copyToClipboard}

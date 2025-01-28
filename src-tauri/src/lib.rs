@@ -14,7 +14,12 @@ use savegame::{parse_local_savegame_data, unwrap_and_save_savegame};
 use serde_json::Value as JsonValue;
 use std::process::Command;
 use std::time::Duration;
-use tauri::{AppHandle, Emitter};
+use tauri::{
+    menu::{Menu, MenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, Manager,
+};
+use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_sentry::{minidump, sentry};
 use winapi::shared::minwindef::DWORD;
 
@@ -177,6 +182,62 @@ pub fn run() {
     // Everything after here runs in only the app process
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            Some(vec![]),
+        ))
+        // minimize to tray icon (tauri 2.0)
+        .on_window_event(|window, event| {
+            println!("Event: {:?}", event);
+            #[cfg(not(target_os = "linux"))]
+            if let tauri::WindowEvent::Moved(position) = event {
+                print!("position {:?}", position);
+                if position.x < -1960 && position.y < -1080 && window.is_visible().unwrap() {
+                    std::thread::sleep(Duration::from_millis(100));
+
+                    window.hide().unwrap();
+                }
+            }
+        })
+        .setup(|app| {
+            let quit_i = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+            let menu = Menu::with_items(app, &[&quit_i])?;
+
+            TrayIconBuilder::new()
+                .menu(&menu)
+                .icon(app.default_window_icon().unwrap().clone())
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "quit" => {
+                        app.exit(666);
+                    }
+                    _ => {}
+                })
+                .title("Farm Station 2025")
+                .on_tray_icon_event(|tray, event| match event {
+                    TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } => {
+                        let app = tray.app_handle();
+                        if let Some(window) = app.get_webview_window("main") {
+                            window.show().expect("failed to show window");
+                            window.unminimize().expect("failed to unminimize window");
+                            window.set_focus().expect("failed to focus window");
+                        }
+                    }
+                    _ => {}
+                })
+                .build(app)?;
+
+            Ok(())
+        })
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            let _ = app
+                .get_webview_window("main")
+                .expect("no main window")
+                .set_focus();
+        }))
         .plugin(tauri_plugin_sentry::init_with_no_injection(&client))
         .plugin(
             tauri_plugin_log::Builder::new()
@@ -202,6 +263,12 @@ pub fn run() {
             load_config,
             save_config
         ])
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while running tauri application")
+        .run(|_app_handle, event| match event {
+            tauri::RunEvent::ExitRequested { api, code, .. } if code.unwrap() == 666 => {
+                api.prevent_exit();
+            }
+            _ => {}
+        });
 }

@@ -209,7 +209,7 @@
           return value
             .map(
               (f) =>
-                f.name + `(${formatter.format(parseFloat(f.money ?? "0"))})`,
+                f.name + ` (${formatter.format(parseFloat(f.money ?? "0"))})`,
             )
             .join(",\n");
         },
@@ -348,11 +348,10 @@
                     {:else}
                       <div
                         class={cn(
-                          "text-left font-medium line-clamp-2 text-ellipsis",
-                          cell.id === "title" && "min-w-[25vw] overflow-hidden",
+                          "text-left font-medium line-clamp-2 text-ellipsis whitespace-pre-wrap",
+                          cell.id === "name" && "min-w-[120px] overflow-hidden",
                           cell.id === "status" && "overflow-visible",
-                          (cell.id === "playtime" || cell.id === "farms") &&
-                            "whitespace-pre-wrap",
+                          cell.id === "playtime" && "min-w-[120px]",
                         )}
                       >
                         <Render of={cell.render()} />

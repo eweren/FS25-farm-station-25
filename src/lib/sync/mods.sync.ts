@@ -144,18 +144,22 @@ export async function syncMod(mod: Mod, t: TFnType<DefaultParamType, string, Tra
 
     if (remMod && locMod) {
       if (remMod.modInfo.version.localeCompare(mod.version) > 0) {
+        umami.track('download_mod', { mod: remMod.modInfo.modName });
         await downloadMod(remMod.key, remMod.modInfo, t);
         toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
       } else if (remMod.modInfo.version.localeCompare(mod.version) < 0) {
+        umami.track('upload_mod', { mod: remMod.modInfo.modName });
         await uploadMod(mod, t, true);
       } else if (notifyOnMostRecent) {
         toast.info(t("already_synced"));
 
       }
     } else if (locMod && !remMod) {
+      umami.track('upload_mod', { mod: mod.modName });
       await uploadMod(mod, t, true);
       toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
     } else if (!locMod && remMod) {
+      umami.track('download_mod', { mod: remMod.modInfo.modName });
       await downloadMod(remMod.key, remMod.modInfo, t);
       toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
     } else {

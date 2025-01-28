@@ -37,13 +37,19 @@
 </script>
 
 <div class="dropdown">
-  <button onclick={() => (showDropdown = !showDropdown)}>
+  <button
+    class="hover:bg-primary hover:skew-x-[-5deg] py-1 px-2 rounded"
+    onclick={() => (showDropdown = !showDropdown)}
+  >
     {capitalize(languageFormatter.of(currentLanguage) ?? "")}
   </button>
   {#if showDropdown}
     <div transition:slide={{ duration: 100 }} class="dropdown-content">
       {#each availableLanguages as language}
-        <button onclick={() => setCurrentLanguage(language)}>
+        <button
+          data-umami-event={`change_language_${language}`}
+          onclick={() => setCurrentLanguage(language)}
+        >
           {capitalize(languageFormatter.of(language) ?? "")}
         </button>
       {/each}

@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "Autostart je zakázán",
+  "activate_autostart_action": "Aktivujte Start with Windows",
   "already_synced": "Již aktuální",
   "back": "Zadní",
   "cancel": "Zrušit",
@@ -8,6 +10,8 @@
   "copy_path": "Kopírovat cestu",
   "create": "Vytvořit",
   "de": "Němec",
+  "deactivate_autostart": "Autostart je aktivován",
+  "deactivate_autostart_action": "Zakázat spuštění s Windows",
   "download_mod": "Stáhnout mod",
   "download_mod_completed": "Mod {mod} byl úspěšně stažen",
   "download_savegame": "Stáhněte si skóre",

@@ -42,15 +42,15 @@ jobs:
               "template": "#{{CHANGELOG}}",
               "categories": [
                 {
-                    "title": "## Feature",
+                    "title": "Feature",
                     "labels": ["feat", "feature"]
                 },
                 {
-                    "title": "## Fix",
+                    "title": "Fix",
                     "labels": ["fix", "bug"]
                 },
                 {
-                    "title": "## Other",
+                    "title": "Other",
                     "labels": []
                 }
               ],

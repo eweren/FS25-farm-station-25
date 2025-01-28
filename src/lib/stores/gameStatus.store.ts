@@ -57,6 +57,7 @@ const createGameStatusStore = () => {
       await window.requestUserAttention(UserAttentionType.Informational);
 
       await new Promise(res => setTimeout(res, 1000));
+      await window.show();
       await window.unminimize();
       await window.setFocus();
 

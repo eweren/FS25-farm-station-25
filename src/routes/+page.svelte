@@ -30,6 +30,8 @@
   import { remoteMods } from "../lib/stores/savegamesAndMods.store";
   import { error } from "@tauri-apps/plugin-log";
   import LanguageSwitch from "../lib/ui/languageSwitch.svelte";
+  import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
+  import { cn } from "../lib/utils";
 
   let loading = true;
 
@@ -80,6 +82,7 @@
     });
     const window = new Window("main");
     window.setTitle($t("window_title"));
+    autostartEnabled = await isEnabled();
   });
 
   let lastTeamId: string | undefined;
@@ -104,6 +107,7 @@
   let createTeamError: string | null = null;
 
   let joinStep: "choose" | "join" | "create" = "choose";
+  let autostartEnabled = false;
 
   $: {
     if (joinStep) {
@@ -179,6 +183,8 @@
         />
 
         <button
+          data-umami-event="save_name"
+          data-umami-event-name={$config.name}
           disabled={isSubmitting}
           type="submit"
           class="btn-primary mt-auto"
@@ -245,6 +251,7 @@
 
       <div class="h-12"></div>
       <button
+        data-umami-event="start_game"
         disabled={$gameStatus === GameStatus.RUNNING ||
           $gameStatus === GameStatus.STARTING}
         class="fixed bottom-2 left-2 right-2 btn-primary"
@@ -332,6 +339,7 @@
       {#if joinStep === "choose"}
         <div class="flex w-full justify-center gap-4">
           <button
+            data-umami-event="select_join_team"
             type="button"
             class="btn-primary"
             onclick={() => (joinStep = "join")}
@@ -340,6 +348,7 @@
             <T keyName="join" />
           </button>
           <button
+            data-umami-event="select_create_team"
             type="button"
             class="btn-primary outline"
             onclick={() => (joinStep = "create")}
@@ -384,10 +393,40 @@
   {/if}
 
   <div class="absolute top-2 right-2 text-xs flex items-center gap-2">
+    <button
+      onclick={async () => {
+        if (autostartEnabled) {
+          await disable();
+          autostartEnabled = await isEnabled();
+        } else {
+          await enable();
+          autostartEnabled = await isEnabled();
+        }
+      }}
+      class={cn(
+        "hover:skew-x-[-5deg] py-1 px-2 rounded group",
+        autostartEnabled
+          ? "text-primary hover:bg-muted hover:text-foreground"
+          : "hover:bg-primary",
+      )}
+    >
+      <span class="group-hover:hidden block">
+        {autostartEnabled
+          ? $t("deactivate_autostart")
+          : $t("activate_autostart")}
+      </span>
+      <span class="group-hover:block hidden">
+        {autostartEnabled
+          ? $t("deactivate_autostart_action")
+          : $t("activate_autostart_action")}
+      </span>
+    </button>
+
     <LanguageSwitch />
 
     v{$appVersion}
     <button
+      data-umami-event="reload"
       onclick={() => location.reload()}
       title={$t("reload")}
       aria-label={$t("reload")}
@@ -398,6 +437,7 @@
   </div>
   {#if $config.teamId}
     <button
+      data-umami-event="sign_out"
       class="absolute top-2 left-2 px-2 py-1 flex items-center gap-2 text-sm"
       onclick={() => {
         saveConfig({
@@ -452,6 +492,7 @@
     min-height: 100%;
     overflow: auto;
     padding: 1rem;
+    padding-top: 3rem;
     display: flex;
     flex-direction: column;
     justify-content: start;

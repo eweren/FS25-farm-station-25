@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "El inicio automático está deshabilitado",
+  "activate_autostart_action": "Activar Iniciar con Windows",
   "already_synced": "Ya actual",
   "back": "Atrás",
   "cancel": "Cancelar",
@@ -8,6 +10,8 @@
   "copy_path": "Copiar ruta",
   "create": "Crear",
   "de": "Alemán",
+  "deactivate_autostart": "El inicio automático está activado",
+  "deactivate_autostart_action": "Deshabilitar el inicio con Windows",
   "download_mod": "Descargar modo",
   "download_mod_completed": "Mod {mod} descargado exitosamente",
   "download_savegame": "Descargar partitura",

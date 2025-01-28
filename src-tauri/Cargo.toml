@@ -1,6 +1,6 @@
 [package]
 name = "farm-station-25"
-version = "0.4.0"
+version = "0.5.0"
 description = "Farm Station 25 - Sync your savegames and mods with your friends"
 authors = ["Nico Hülscher"]
 edition = "2021"
@@ -13,19 +13,19 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.0.5", features = [] }
 
 [dependencies]
-tauri = { version = "2.2.2", features = [] }
-tauri-plugin-opener = "2.2.4"
+tauri = { version = "2.2.5", features = ["tray-icon"] }
+tauri-plugin-opener = "2.2.5"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1.0.135"
+serde_json = "1.0.137"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 xml2json-rs = "1.0.1"
 zip = "2.2.2"
 walkdir = "2.5.0"
 tauri-plugin-process = "2"
-tauri-plugin-log = "2"
+tauri-plugin-log = "2.2.1"
 regex = "1.11.1"
-tauri-plugin-sentry = "0.4"
+tauri-plugin-sentry = "0.4.1"
 log = "0.4.25"
 serde-xml-rs = "0.6.0"
 ts-rs = "10.1"
@@ -35,5 +35,7 @@ filetime = "0.2.25"
 winapi = { version = "0.3", features = ["winuser", "handleapi", "processthreadsapi", "winbase", "synchapi"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-updater = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2.4.0"
 

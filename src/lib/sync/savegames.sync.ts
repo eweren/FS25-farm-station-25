@@ -166,6 +166,8 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
               },
               onSelectionChange: async (savegameId: string) => {
                 toast.dismiss(toastId);
+                umami.track('download_savegame', { savegame: remoteSavegame.key });
+
                 await downloadSavegame(remoteSavegame.key, t, savegameId);
                 toast.success(t("sync_completed"));
               }
@@ -173,11 +175,13 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
             duration: Infinity
           });
         } else {
+          umami.track('download_savegame', { savegame: remoteSavegame.key });
           await downloadSavegame(remoteSavegame.key, t);
           toast.success(t("sync_completed"));
         }
 
       } else if (remoteSavegameDate < localSavegameDate || remoteSavegame.savegameInfo.playTime !== savegame.playTime) {
+        umami.track('upload_savegame', { savegame: savegame.id });
         await uploadSavegame(savegame, t);
         toast.success(t("sync_completed"));
       } else if (notifyOnMostRecent) {
