@@ -49,6 +49,7 @@
       class="bg-primary text-white btn-primary aspect-square !p-2 relative"
       disabled={processingSavegames.has(savegame.id) || isSynced}
       onclick={async () => {
+        processingSavegames.add(savegame.id);
         if (type === "local") {
           await uploadSavegame(savegame, $t);
         } else if (type === "remote" && savegame.isRemote) {
@@ -56,6 +57,7 @@
         } else {
           await syncSavegame(savegame, $t);
         }
+        processingSavegames.delete(savegame.id);
       }}
       aria-label={type === "local" || canUpload
         ? $t("upload_savegame")
