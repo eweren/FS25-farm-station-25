@@ -58,6 +58,42 @@ app.get('/_mods', async (context) => {
   await getSharedDataFromHeaders(context, true);
   const db = initDbConnect(context.env.DB);
 
+  // let res = await context.env.LS25.list({ prefix: "_mods", limit: 500, include: ["customMetadata"] });
+  // const rawMods = res.objects.map(o => ({ key: o.key, uploaded: o.uploaded.toISOString(), size: o.size, modInfo: JSON.parse(o.customMetadata?.modInfo ?? "{}") }) as ModResponse);
+
+  // while (res.truncated) {
+  //   res = await context.env.LS25.list({ prefix: "_mods", limit: 500, include: ["customMetadata"], startAfter: res.objects[res.objects.length - 1].key });
+  //   rawMods.push(...res.objects.map(o => ({ key: o.key, uploaded: o.uploaded.toISOString(), size: o.size, modInfo: JSON.parse(o.customMetadata?.modInfo ?? "{}") }) as ModResponse));
+  // }
+
+  // console.log(rawMods.filter(m => m.size === 13).length);
+  // for (const deleteMod of rawMods.filter(m => m.size === 13)) {
+  //   await context.env.LS25.delete(deleteMod.key);
+  //   console.log(deleteMod.key, "deleted");
+  // }
+
+  // // Delete all mods from the database
+  // await db.delete(mods).all();
+
+  // // Insert all mods from the remote server
+
+  // for (let i = 0; i < rawMods.length; i += 20) {
+  //   await db.insert(mods).values(rawMods.slice(i, i + 5).map(m => ({
+  //     modName: m.modInfo.modName,
+  //     fileHash: m.modInfo.fileHash ?? "",
+  //     id: m.key.split("___")[0],
+  //     title: JSON.stringify(m.modInfo.titles),
+  //     description: JSON.stringify(m.modInfo.description),
+  //     version: m.modInfo.version,
+  //     filename: m.modInfo.filename,
+  //     size: m.size,
+  //     uploaded: m.uploaded
+  //   }))).onConflictDoNothing();
+  // }
+
+
+  // return context.json(rawMods);
+
   const allModsInDb = (await db.select().from(mods).all()).map(m => ({ key: m.id, uploaded: m.uploaded, size: m.size, modInfo: { ...m, titles: JSON.parse(m.title), description: JSON.parse(m.description) } }) as ModResponse);
 
   return context.json(allModsInDb);

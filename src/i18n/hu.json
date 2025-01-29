@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "Az automatikus indítás le van tiltva",
+  "activate_autostart_action": "Aktiválja a Start with Windows lehetőséget",
   "already_synced": "Már aktuális",
   "back": "Vissza",
   "cancel": "Mégsem",
@@ -8,8 +10,11 @@
   "copy_path": "Útvonal másolása",
   "create": "Teremt",
   "de": "német",
+  "deactivate_autostart": "Az automatikus indítás aktiválva van",
+  "deactivate_autostart_action": "Letiltja a Windows rendszerrel való indítást",
   "download_mod": "Mod letöltése",
   "download_mod_completed": "A(z) {mod} mod sikeresen letöltve",
+  "download_mod_failed": "A(z) {modName} mod nem tölthető le",
   "download_savegame": "Letöltés pontszám",
   "downloading_mod": "A(z) {title} mod letöltése folyamatban van",
   "downloading_savegame": "A Score letöltése folyamatban van",

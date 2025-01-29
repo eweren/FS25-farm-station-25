@@ -14,6 +14,7 @@
   "deactivate_autostart_action": "Deshabilitar el inicio con Windows",
   "download_mod": "Descargar modo",
   "download_mod_completed": "Mod {mod} descargado exitosamente",
+  "download_mod_failed": "No se pudo descargar el mod {modName}",
   "download_savegame": "Descargar partitura",
   "downloading_mod": "Mod {title} se está descargando",
   "downloading_savegame": "La partitura se está descargando",

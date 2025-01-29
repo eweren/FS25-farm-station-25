@@ -14,6 +14,7 @@
   "deactivate_autostart_action": "Zakázat spuštění s Windows",
   "download_mod": "Stáhnout mod",
   "download_mod_completed": "Mod {mod} byl úspěšně stažen",
+  "download_mod_failed": "Mod {modName} nelze stáhnout",
   "download_savegame": "Stáhněte si skóre",
   "downloading_mod": "Mod {title} se stahuje",
   "downloading_savegame": "Skóre se stahuje",

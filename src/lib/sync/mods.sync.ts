@@ -108,31 +108,6 @@ export async function getModsFromRemote() {
 }
 
 /**
- *  Uploads all mods to the remote server.
- * @param t the tolgee t function to localize toast messages
- */
-export async function uploadAllMods(t: TFnType<DefaultParamType, string, TranslationKey>) {
-  try {
-    const locMods = get(allLocalMods);
-    if (locMods.length === 0) {
-      return;
-    }
-    processingAllMods.set(true);
-
-    for (const mod of locMods) {
-      await syncMod(mod, t);
-    }
-
-    toast.success(t("every_mod_synced"), { duration: 10000, dismissable: true });
-
-  } catch (e) {
-    toast(t("error"), { duration: 5000 });
-    error(`Error uploading all mods ${e}`);
-  }
-  processingAllMods.set(false);
-}
-
-/**
  * Downloads or uploads a single mod to the remote server, based if it exists locally or remotely.
  * @param mod the mod to sync
  * @param t the tolgee t function to localize toast messages
@@ -244,12 +219,18 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
     console.log(key);
 
     const data = await fetch(
-      `${protocol}://${baseDomain}/${key}`,
+      `${protocol}://${baseDomain}/${key.startsWith("_mods/") ? key : `_mods/${key}`}`,
       {
         method: "GET",
         headers,
       },
-    ).then(async (response) => response.arrayBuffer());
+    ).then(async (response) => response.status === 200 ? response.arrayBuffer() : null);
+
+    if (data == null) {
+      toast.error(t("download_mod_failed", { modName: getTitleFromMod(mod) }));
+      return;
+    }
+
 
     await writeFile(`${dir}/mods/${mod.filename ?? `${mod.modName}.zip`}`, new Uint8Array(data), {
       baseDir: BaseDirectory.Document,

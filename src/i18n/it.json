@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "L'avvio automatico è disabilitato",
+  "activate_autostart_action": "Attiva Inizia con Windows",
   "already_synced": "Già attuale",
   "back": "Indietro",
   "cancel": "Cancellare",
@@ -8,8 +10,11 @@
   "copy_path": "Copia percorso",
   "create": "Creare",
   "de": "tedesco",
+  "deactivate_autostart": "L'avvio automatico è attivato",
+  "deactivate_autostart_action": "Disabilita l'avvio con Windows",
   "download_mod": "Scarica mod",
   "download_mod_completed": "Mod {mod} scaricato correttamente",
+  "download_mod_failed": "Impossibile scaricare la mod {modName}",
   "download_savegame": "Scarica la partitura",
   "downloading_mod": "È in corso il download della mod {title}",
   "downloading_savegame": "Il punteggio è in fase di download",

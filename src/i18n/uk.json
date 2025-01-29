@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "Автозапуск вимкнено",
+  "activate_autostart_action": "Активуйте «Почати з Windows».",
   "already_synced": "Вже актуальний",
   "back": "Назад",
   "cancel": "Скасувати",
@@ -8,8 +10,11 @@
   "copy_path": "Копіювати шлях",
   "create": "Створити",
   "de": "Німецький",
+  "deactivate_autostart": "Автозапуск активований",
+  "deactivate_autostart_action": "Вимкнути запуск з Windows",
   "download_mod": "Завантажити мод",
   "download_mod_completed": "Мод {mod} успішно завантажено",
+  "download_mod_failed": "Мод {modName} не вдалося завантажити",
   "download_savegame": "Завантажити оцінку",
   "downloading_mod": "Мод {title} завантажується",
   "downloading_savegame": "Оцінка завантажується",

@@ -14,6 +14,7 @@
   "deactivate_autostart_action": "Disable Boot with Windows",
   "download_mod": "Download mod",
   "download_mod_completed": "Mod {mod} successfully downloaded",
+  "download_mod_failed": "Mod {modName} could not be downloaded",
   "download_savegame": "Download savegame",
   "downloading_mod": "Downloading Mod {title}",
   "downloading_savegame": "Savegame is being downloaded",

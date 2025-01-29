@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "Automatisch starten is uitgeschakeld",
+  "activate_autostart_action": "Activeer Start met Windows",
   "already_synced": "Al actueel",
   "back": "Rug",
   "cancel": "Annuleren",
@@ -8,8 +10,11 @@
   "copy_path": "Kopieer pad",
   "create": "Creëren",
   "de": "Duits",
+  "deactivate_autostart": "Autostart is geactiveerd",
+  "deactivate_autostart_action": "Schakel het starten met Windows uit",
   "download_mod": "Mod downloaden",
   "download_mod_completed": "Mod {mod} is succesvol gedownload",
+  "download_mod_failed": "Mod {modName} kan niet worden gedownload",
   "download_savegame": "Partituur downloaden",
   "downloading_mod": "Mod {title} wordt gedownload",
   "downloading_savegame": "Score wordt gedownload",

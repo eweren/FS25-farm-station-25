@@ -14,6 +14,7 @@
   "deactivate_autostart_action": "Starten mit Windows deaktivieren",
   "download_mod": "Mod herunterladen",
   "download_mod_completed": "Mod {mod} erfolgreich heruntergeladen",
+  "download_mod_failed": "Mod {modName} konnte nicht heruntergeladen werden",
   "download_savegame": "Spielstand herunterladen",
   "downloading_mod": "Mod {title} wird heruntergeladen",
   "downloading_savegame": "Spielstand wird heruntergeladen",

@@ -1,5 +1,6 @@
 {
   "activate_autostart": "Le démarrage automatique est désactivé",
+  "activate_autostart_action": "Activer Démarrer avec Windows",
   "already_synced": "Déjà actuel",
   "back": "Dos",
   "cancel": "Annuler",
@@ -13,6 +14,7 @@
   "deactivate_autostart_action": "Désactiver le démarrage avec Windows",
   "download_mod": "Télécharger le module",
   "download_mod_completed": "Mod {mod} téléchargé avec succès",
+  "download_mod_failed": "Le module {modName} n'a pas pu être téléchargé",
   "download_savegame": "Télécharger la partition",
   "downloading_mod": "Le module {title} est en cours de téléchargement",
   "downloading_savegame": "La partition est en cours de téléchargement",

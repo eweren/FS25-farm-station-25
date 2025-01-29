@@ -1,6 +1,6 @@
 [package]
 name = "farm-station-25"
-version = "0.5.3"
+version = "0.5.5"
 description = "Farm Station 25 - Sync your savegames and mods with your friends"
 authors = ["Nico Hülscher"]
 edition = "2021"
@@ -13,10 +13,10 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2.0.5", features = [] }
 
 [dependencies]
-tauri = { version = "2.2.5", features = ["tray-icon"] }
-tauri-plugin-opener = "2.2.5"
+tauri = { version = "2.2.2", features = ["tray-icon"] }
+tauri-plugin-opener = "2.2.2"
 serde = { version = "1", features = ["derive"] }
-serde_json = "1.0.137"
+serde_json = "1.0.138"
 tauri-plugin-dialog = "2"
 tauri-plugin-fs = "2"
 xml2json-rs = "1.0.1"

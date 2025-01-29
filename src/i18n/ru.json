@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "Автозапуск отключен",
+  "activate_autostart_action": "Активируйте «Пуск с Windows»",
   "already_synced": "Уже актуально",
   "back": "Назад",
   "cancel": "Отмена",
@@ -8,8 +10,11 @@
   "copy_path": "Копировать путь",
   "create": "Создавать",
   "de": "немецкий",
+  "deactivate_autostart": "Автозапуск активирован",
+  "deactivate_autostart_action": "Отключить запуск с Windows",
   "download_mod": "Скачать мод",
   "download_mod_completed": "Мод {mod} успешно загружен.",
+  "download_mod_failed": "Мод {modName} не удалось загрузить.",
   "download_savegame": "Скачать партитуру",
   "downloading_mod": "Мод {title} загружается",
   "downloading_savegame": "Оценка загружается",

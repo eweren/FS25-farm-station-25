@@ -1,4 +1,6 @@
 {
+  "activate_autostart": "Autostart jest wyłączony",
+  "activate_autostart_action": "Aktywuj opcję Uruchom w systemie Windows",
   "already_synced": "Już aktualne",
   "back": "Z powrotem",
   "cancel": "Anulować",
@@ -8,8 +10,11 @@
   "copy_path": "Skopiuj ścieżkę",
   "create": "Tworzyć",
   "de": "niemiecki",
+  "deactivate_autostart": "Autostart jest aktywny",
+  "deactivate_autostart_action": "Wyłącz uruchamianie w systemie Windows",
   "download_mod": "Pobierz moda",
   "download_mod_completed": "Mod {mod} został pomyślnie pobrany",
+  "download_mod_failed": "Nie można pobrać moda {modName}",
   "download_savegame": "Pobierz wynik",
   "downloading_mod": "Trwa pobieranie moda {title}",
   "downloading_savegame": "Trwa pobieranie wyniku",

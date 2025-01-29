@@ -156,7 +156,7 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
         )
         .toArray();
 
-      if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime || remoteSavegame.savegameInfo.mods.length !== savegame.mods.length)) {
+      if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime || (typeof (remoteSavegame.savegameInfo.mods as any) === "number" ? remoteSavegame.savegameInfo.mods : remoteSavegame.savegameInfo.mods.length) !== savegame.mods.length)) {
         if (savegame.isRemote) {
 
           const toastId = toast.custom(SelectModSlot as unknown as ComponentType, {
@@ -190,11 +190,6 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
 
         await saveConfig(_config);
         toast.info(t("already_synced"));
-      }
-
-      if (_remoteOnlyMods.length > 0) {
-        info(`Remote has mods that local doesn't have: ${_remoteOnlyMods.join(", ")}. Starting to download them.`);
-        await syncModsForSavegame(savegame, t);
       }
     } else {
       await uploadSavegame(savegame, t);
@@ -345,8 +340,8 @@ export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<Default
   let toastNr;
 
   if (saveGame) {
-    const onlyRemoteMods = saveGame.mods.filter(m => get(remoteModsFromSavegames).some(mod => m.filename === m.filename && m.version === mod.version));
-    const onlyLocalMods = saveGame.mods.filter(m => get(allLocalMods).some(mod => m.filename === m.filename && m.version === mod.version));
+    const onlyRemoteMods = saveGame.mods.filter(m => get(remoteModsFromSavegames).some(mod => m.filename === mod.filename && m.version === mod.version));
+    const onlyLocalMods = saveGame.mods.filter(m => get(allLocalMods).some(mod => m.filename === mod.filename && m.version === mod.version));
     if (onlyRemoteMods.length > 0) {
       for (const mod of onlyRemoteMods) {
         const remMod = (await remoteMods.current()).find((r) => r.modInfo.modName === mod.modName && r.modInfo.version === mod.version);
