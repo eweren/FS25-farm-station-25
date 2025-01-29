@@ -2,6 +2,7 @@
   import { getTranslate } from "@tolgee/svelte";
 
   import {
+    localMods,
     processingSavegames,
     remoteSavegames,
   } from "../stores/savegamesAndMods.store";
@@ -34,7 +35,26 @@
   const isSynced = $derived(
     type === "both" &&
       remoteSavegameDate?.valueOf() === localSavegameDate.valueOf() &&
-      remoteSavegame?.savegameInfo.playTime === savegame.playTime,
+      remoteSavegame?.savegameInfo.playTime === savegame.playTime &&
+      $localMods
+        .keys()
+        .filter((localMod) =>
+          savegame.mods.some((m) => m.modName + m.version === localMod),
+        )
+        .toArray().length === savegame.mods.length,
+  );
+
+  $effect(() =>
+    console.log(
+      isSynced,
+      $localMods
+        .keys()
+        .filter((localMod) =>
+          savegame.mods.some((m) => m.modName + m.version === localMod),
+        )
+        .toArray().length,
+      savegame.mods.length,
+    ),
   );
   const canUpload = $derived(
     (remoteSavegameDate?.valueOf() ?? 0) < localSavegameDate.valueOf() ||
@@ -42,7 +62,13 @@
   );
   const canDownload = $derived(
     (remoteSavegameDate?.valueOf() ?? 0) > localSavegameDate.valueOf() ||
-      (remoteSavegame?.savegameInfo.playTime ?? 0) > savegame.playTime,
+      (remoteSavegame?.savegameInfo.playTime ?? 0) > savegame.playTime ||
+      $localMods
+        .keys()
+        .filter((localMod) =>
+          savegame.mods.some((m) => m.modName + m.version === localMod),
+        )
+        .toArray().length !== savegame.mods.length,
   );
 </script>
 

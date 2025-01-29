@@ -156,7 +156,7 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
         )
         .toArray();
 
-      if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime)) {
+      if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime || remoteSavegame.savegameInfo.mods.length !== savegame.mods.length)) {
         if (savegame.isRemote) {
 
           const toastId = toast.custom(SelectModSlot as unknown as ComponentType, {
@@ -290,7 +290,7 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
     let toastNr = toast.loading(t("downloading_savegame"), { duration: Infinity });
 
     const data = await fetch(
-      `${protocol}://${baseDomain}/${headers.get("teamId")}/savegames/${saveGameKey}`,
+      `${protocol}://${baseDomain}/${headers.get("teamId")}/savegames/${saveGameKey.split("/").pop()}`,
       {
         method: "GET",
         headers,
@@ -349,10 +349,10 @@ export async function syncModsForSavegame(saveGame: Savegame, t: TFnType<Default
     const onlyLocalMods = saveGame.mods.filter(m => get(allLocalMods).some(mod => m.filename === m.filename && m.version === mod.version));
     if (onlyRemoteMods.length > 0) {
       for (const mod of onlyRemoteMods) {
-        const remMod = get(remoteMods).get(mod.modName + mod.version);
-        if (remMod?.remoteFileName) {
-          info(`Downloading mod ${remMod.remoteFileName}`);
-          await downloadMod(remMod?.remoteFileName, mod, t);
+        const remMod = (await remoteMods.current()).find((r) => r.modInfo.modName === mod.modName && r.modInfo.version === mod.version);
+        if (remMod?.key) {
+          info(`Downloading mod ${remMod.key}`);
+          await downloadMod(remMod.key, mod, t);
           toast.success(t("sync_mod_completed", { mod: getTitleFromMod(mod) }));
         } else {
           setTimeout(() => {

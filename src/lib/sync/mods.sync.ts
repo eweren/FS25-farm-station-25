@@ -141,7 +141,7 @@ export async function uploadAllMods(t: TFnType<DefaultParamType, string, Transla
 export async function syncMod(mod: Mod, t: TFnType<DefaultParamType, string, TranslationKey>, notifyOnMostRecent: boolean = true) {
   try {
     processingMods.add(mod.modName);
-    const remMod = (await remoteMods.current()).find((r) => r.modInfo.modName === mod.modName);
+    const remMod = (await remoteMods.current()).find((r) => r.modInfo.modName === mod.modName && r.modInfo.version === mod.version);
     const locMod = get(localMods).get(mod.modName + mod.version);
 
     if (remMod && locMod) {
@@ -240,6 +240,8 @@ export async function downloadMod(key: string, mod: Mod, t: TFnType<DefaultParam
     }
 
     processingMods.add(mod.modName);
+
+    console.log(key);
 
     const data = await fetch(
       `${protocol}://${baseDomain}/${key}`,
