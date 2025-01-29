@@ -290,7 +290,7 @@ export async function downloadSavegame(saveGameKey: string, t: TFnType<DefaultPa
     let toastNr = toast.loading(t("downloading_savegame"), { duration: Infinity });
 
     const data = await fetch(
-      `${protocol}://${baseDomain}/${saveGameKey}`,
+      `${protocol}://${baseDomain}/${headers.get("teamId")}/savegames/${saveGameKey}`,
       {
         method: "GET",
         headers,

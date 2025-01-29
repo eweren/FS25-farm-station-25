@@ -1,6 +1,6 @@
 [package]
 name = "farm-station-25"
-version = "0.5.1"
+version = "0.5.2"
 description = "Farm Station 25 - Sync your savegames and mods with your friends"
 authors = ["Nico Hülscher"]
 edition = "2021"

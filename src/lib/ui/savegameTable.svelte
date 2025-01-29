@@ -29,18 +29,13 @@
   import { Input } from "../components/ui/input";
   import type { Mod } from "../types/mod";
   import * as Tooltip from "$lib/components/ui/tooltip";
-  import type { Savegame } from "../types/savegame";
-  import type { ListObjectResponse } from "../types/listObjectResponse";
+
+  import type { EnhancedSavegame } from "../types/listObjectResponse";
   import { config } from "../stores/config.store";
   import SavegameSyncButton from "./savegameSyncButton.svelte";
   import type { SvelteComponent } from "svelte";
 
   const { t } = getTranslate();
-
-  type EnhancedSavegame = Savegame & {
-    location: "remote" | "local" | "both";
-    info: Omit<ListObjectResponse, "savegameInfo">;
-  };
 
   const data = writable<Array<EnhancedSavegame>>([
     ...$savegamesWithRemote.map(

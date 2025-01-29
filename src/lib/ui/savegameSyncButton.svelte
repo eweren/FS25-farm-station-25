@@ -12,11 +12,14 @@
     syncSavegame,
     uploadSavegame,
   } from "../sync/savegames.sync";
+  import type { EnhancedSavegame } from "../types/listObjectResponse";
 
-  const { savegame, type } = $props<{
-    savegame: Savegame;
-    type: "remote" | "local" | "both";
-  }>();
+  type SavegameSyncButtonProps = {
+    savegame: EnhancedSavegame;
+    type: "local" | "remote" | "both";
+  };
+
+  const { savegame, type }: SavegameSyncButtonProps = $props();
 
   const { t } = getTranslate();
 
@@ -53,7 +56,7 @@
         if (type === "local") {
           await uploadSavegame(savegame, $t);
         } else if (type === "remote" && savegame.isRemote) {
-          await downloadSavegame(savegame.id, $t);
+          await downloadSavegame(savegame.info.key, $t);
         } else {
           await syncSavegame(savegame, $t);
         }

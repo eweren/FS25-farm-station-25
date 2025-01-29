@@ -6,3 +6,8 @@ export type ListObjectResponse = {
   uploaded: string;
   savegameInfo: Savegame;
 }
+
+export type EnhancedSavegame = Savegame & {
+  location: "remote" | "local" | "both";
+  info: Omit<ListObjectResponse, "savegameInfo">;
+};
