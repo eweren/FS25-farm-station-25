@@ -156,7 +156,7 @@ export async function syncSavegame(savegame: Savegame, t: TFnType<DefaultParamTy
         )
         .toArray();
 
-      if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime || (typeof (remoteSavegame.savegameInfo.mods as any) === "number" ? remoteSavegame.savegameInfo.mods : remoteSavegame.savegameInfo.mods.length) !== savegame.mods.length)) {
+      if (savegame.isRemote || (remoteSavegameDate > localSavegameDate || remoteSavegame.savegameInfo.playTime > savegame.playTime)) {
         if (savegame.isRemote) {
 
           const toastId = toast.custom(SelectModSlot as unknown as ComponentType, {

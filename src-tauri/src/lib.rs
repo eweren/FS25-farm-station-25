@@ -56,6 +56,18 @@ async fn watch_farming_simulator_25(app: AppHandle) {
     }
 }
 
+fn get_app_path(app_name: &str) -> Option<String> {
+    let output = Command::new("where").arg(app_name).output().ok()?;
+
+    if output.status.success() {
+        String::from_utf8(output.stdout)
+            .ok()
+            .map(|path| path.trim().to_string())
+    } else {
+        None
+    }
+}
+
 // Starts FS25
 #[tauri::command]
 async fn start_farming_simulator_25(app: AppHandle) {
@@ -63,7 +75,8 @@ async fn start_farming_simulator_25(app: AppHandle) {
     if let Some(_process_id) = get_process_id(PROCESS_NAME) {
         return;
     }
-    Command::new(PROCESS_PATH)
+    let app_path = get_app_path(PROCESS_NAME).unwrap_or_else(|| PROCESS_PATH.to_string());
+    Command::new(app_path)
         .spawn()
         .expect("Failed to start process");
 
