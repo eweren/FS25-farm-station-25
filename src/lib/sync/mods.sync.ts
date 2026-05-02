@@ -48,8 +48,15 @@ export const getDescriptionFromMod = (mod: Mod) => {
  * @returns an array of local mods. Each mod is an object with properties such as `mod_name`, `description`, and `author`.
  */
 export async function getLocalMods() {
-  const data = ((await invoke("read_mod_desc_files")) as Array<Mod>);
-  const modFiles: Array<Mod> = data?.sort((a, b) => a.modName.localeCompare(b.modName));
+  // Pass the configured game-data directory so the backend respects user-chosen
+  // paths instead of always defaulting to `My Games/FarmingSimulator2025/mods`,
+  // which doesn't exist on macOS / Linux and may be wrong on Windows when the
+  // user picked a custom location.
+  const documentsRelativeDir = await getFS25Dir();
+  const data = ((await invoke("read_mod_desc_files", {
+    documentsRelativeDir: documentsRelativeDir ?? null,
+  })) as Array<Mod> | null) ?? [];
+  const modFiles: Array<Mod> = data.sort((a, b) => a.modName.localeCompare(b.modName));
   const modMap = new Map<string, Mod>();
   for (const modFile of modFiles) {
     modMap.set(modFile.modName + modFile.version, modFile);
