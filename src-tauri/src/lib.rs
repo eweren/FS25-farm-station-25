@@ -21,15 +21,22 @@ use tauri::{
 };
 use tauri_plugin_autostart::MacosLauncher;
 use tauri_plugin_sentry::{minidump, sentry};
-use winapi::shared::minwindef::DWORD;
 
 static mut PROCESS_EXITED: bool = false;
 static mut PROCESS_RUNNING: bool = false;
 
+#[cfg(target_os = "windows")]
 static PROCESS_NAME: &str = "FarmingSimulator2025Game.exe";
-// Asserts default windows installation path
+#[cfg(not(target_os = "windows"))]
+static PROCESS_NAME: &str = "FarmingSimulator2025";
+
+// Default install location on Windows. Other platforms have no official FS25 build,
+// so we fall back to letting the user pick the executable manually.
+#[cfg(target_os = "windows")]
 static PROCESS_PATH: &str =
     r"C:\Program Files (x86)\Farming Simulator 2025\FarmingSimulator2025.exe";
+#[cfg(not(target_os = "windows"))]
+static PROCESS_PATH: &str = "FarmingSimulator2025";
 
 // Returns the version number from the cargo.toml
 #[tauri::command]
@@ -45,7 +52,7 @@ async fn watch_farming_simulator_25(app: AppHandle) {
     check_process(&app_handle);
 
     loop {
-        if (unsafe { PROCESS_EXITED } == true) {
+        if unsafe { PROCESS_EXITED } == true {
             unsafe {
                 PROCESS_EXITED = false;
             }
@@ -56,6 +63,7 @@ async fn watch_farming_simulator_25(app: AppHandle) {
     }
 }
 
+#[cfg(target_os = "windows")]
 fn get_app_path(app_name: &str) -> Option<String> {
     let output = Command::new("where").arg(app_name).output().ok()?;
 
@@ -63,6 +71,22 @@ fn get_app_path(app_name: &str) -> Option<String> {
         String::from_utf8(output.stdout)
             .ok()
             .map(|path| path.trim().to_string())
+    } else {
+        None
+    }
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_app_path(app_name: &str) -> Option<String> {
+    let output = Command::new("which").arg(app_name).output().ok()?;
+
+    if output.status.success() {
+        let path = String::from_utf8(output.stdout).ok()?.trim().to_string();
+        if path.is_empty() {
+            None
+        } else {
+            Some(path)
+        }
     } else {
         None
     }
@@ -76,9 +100,27 @@ async fn start_farming_simulator_25(app: AppHandle) {
         return;
     }
     let app_path = get_app_path(PROCESS_NAME).unwrap_or_else(|| PROCESS_PATH.to_string());
-    Command::new(app_path)
-        .spawn()
-        .expect("Failed to start process");
+
+    let spawn_result = {
+        #[cfg(target_os = "macos")]
+        {
+            // On macOS prefer `open -a` so the user does not need to know the bundle path.
+            Command::new("open").args(["-a", &app_path]).spawn()
+        }
+        #[cfg(not(target_os = "macos"))]
+        {
+            Command::new(&app_path).spawn()
+        }
+    };
+
+    if let Err(e) = spawn_result {
+        sentry::capture_message(
+            &format!("Failed to start process at {}: {}", app_path, e),
+            sentry::Level::Error,
+        );
+        log::error!("Failed to start process at {}: {}", app_path, e);
+        return;
+    }
 
     match app.emit("process-started", ()) {
         Ok(_) => {}
@@ -142,9 +184,9 @@ fn check_process(app: &AppHandle) {
     }
 }
 
-fn get_process_id(process_name: &str) -> Option<DWORD> {
+#[cfg(target_os = "windows")]
+fn get_process_id(process_name: &str) -> Option<u32> {
     let mut cmd = Command::new("tasklist");
-    #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x08000000); // CREATE_NO_WINDOW constant
@@ -169,13 +211,40 @@ fn get_process_id(process_name: &str) -> Option<DWORD> {
     for line in lines.iter().skip(1) {
         let process_info: Vec<&str> = line.trim().split_whitespace().collect();
         if process_info.len() >= 2 {
-            if let Ok(pid) = process_info[1].parse::<DWORD>() {
+            if let Ok(pid) = process_info[1].parse::<u32>() {
                 return Some(pid);
             }
         }
     }
 
     None
+}
+
+#[cfg(not(target_os = "windows"))]
+fn get_process_id(process_name: &str) -> Option<u32> {
+    // `pgrep -x` matches the process name exactly. On macOS/Linux the FS25 binary
+    // (when run e.g. through Wine/CrossOver) is generally not detectable via the
+    // exact name, so fall back to a substring search.
+    let exact = Command::new("pgrep").arg("-x").arg(process_name).output();
+    let pid_string = match exact {
+        Ok(output) if output.status.success() => String::from_utf8_lossy(&output.stdout).trim().to_string(),
+        _ => {
+            let fuzzy = Command::new("pgrep")
+                .arg("-f")
+                .arg(process_name)
+                .output()
+                .ok()?;
+            if !fuzzy.status.success() {
+                return None;
+            }
+            String::from_utf8_lossy(&fuzzy.stdout).trim().to_string()
+        }
+    };
+
+    pid_string
+        .lines()
+        .next()
+        .and_then(|line| line.trim().parse::<u32>().ok())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -205,10 +274,11 @@ pub fn run() {
             #[cfg(not(target_os = "linux"))]
             if let tauri::WindowEvent::Moved(position) = event {
                 print!("position {:?}", position);
-                if position.x < -1960 && position.y < -1080 && window.is_visible().unwrap() {
+                if position.x < -1960 && position.y < -1080 && window.is_visible().unwrap_or(false)
+                {
                     std::thread::sleep(Duration::from_millis(100));
 
-                    window.hide().unwrap();
+                    let _ = window.hide();
                 }
             }
         })
@@ -279,7 +349,7 @@ pub fn run() {
         .build(tauri::generate_context!())
         .expect("error while running tauri application")
         .run(|_app_handle, event| match event {
-            tauri::RunEvent::ExitRequested { api, code, .. } if code.unwrap() == 666 => {
+            tauri::RunEvent::ExitRequested { api, code, .. } if code.unwrap_or(0) == 666 => {
                 api.prevent_exit();
             }
             _ => {}

@@ -32,6 +32,17 @@
   import LanguageSwitch from "../lib/ui/languageSwitch.svelte";
   import { disable, enable, isEnabled } from "@tauri-apps/plugin-autostart";
   import { cn } from "../lib/utils";
+  import { appLogDir } from "@tauri-apps/api/path";
+
+  // Resolve the actual log directory through Tauri so the path we copy to the
+  // user's clipboard is correct on Windows (%LocalAppData%/...), macOS
+  // (~/Library/Logs/...), and Linux (~/.local/share/.../logs).
+  let logsPath = "";
+  appLogDir()
+    .then((p) => (logsPath = p))
+    .catch(() => {
+      logsPath = "%LocalAppData%\\de.farm-station-25.app\\logs";
+    });
 
   let loading = true;
 
@@ -48,7 +59,7 @@
           label: $t("copy_path"),
           onClick: () => {
             navigator.clipboard
-              .writeText("%LocalAppData%\\de.farm-station-25.app\\logs")
+              .writeText(logsPath)
               .then(() => {
                 toast.success($t("copied"), {
                   duration: 2000,

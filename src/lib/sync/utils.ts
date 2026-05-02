@@ -11,7 +11,10 @@ import { dev } from '$app/environment';
 export const baseDomain = dev ? "127.0.0.1:8787" : "farm-station-25.eweren.workers.dev";
 export const protocol = dev ? "http" : "https";
 
-export const documentsDefaultDir = "My Games\\FarmingSimulator2025";
+// Forward-slashes work on Windows too (the OS canonicalises), and are required
+// on macOS / Linux where `\` is a regular filename character. The Rust side
+// also normalises any leftover backslashes via `normalize_relative_path`.
+export const documentsDefaultDir = "My Games/FarmingSimulator2025";
 
 /**
  * Fetches the potentially other players that are playing from server.
