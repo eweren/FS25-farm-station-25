@@ -70,7 +70,8 @@ fn get_app_path(app_name: &str) -> Option<String> {
     if output.status.success() {
         String::from_utf8(output.stdout)
             .ok()
-            .map(|path| path.trim().to_string())
+            .and_then(|out| out.lines().next().map(|l| l.trim().to_string()))
+            .filter(|path| !path.is_empty())
     } else {
         None
     }
@@ -92,14 +93,41 @@ fn get_app_path(app_name: &str) -> Option<String> {
     }
 }
 
-// Starts FS25
+// Returns the first existing FS25 executable: PATH lookup, then well-known install locations.
+fn resolve_app_path() -> String {
+    if let Some(p) = get_app_path(PROCESS_NAME).filter(|p| std::path::Path::new(p).exists()) {
+        return p;
+    }
+    #[cfg(target_os = "windows")]
+    {
+        let rel_default = r"Farming Simulator 2025\FarmingSimulator2025.exe";
+        let rel_steam = r"Steam\steamapps\common\Farming Simulator 25\FarmingSimulator2025.exe";
+        let mut candidates: Vec<String> = Vec::new();
+        for var in ["ProgramFiles(x86)", "ProgramFiles"] {
+            if let Ok(base) = std::env::var(var) {
+                candidates.push(format!(r"{}\{}", base, rel_default));
+                candidates.push(format!(r"{}\{}", base, rel_steam));
+            }
+        }
+        for drive in ['C', 'D', 'E', 'F', 'G'] {
+            candidates.push(format!(r"{}:\SteamLibrary\steamapps\common\Farming Simulator 25\FarmingSimulator2025.exe", drive));
+            candidates.push(format!(r"{}:\Program Files (x86)\{}", drive, rel_default));
+        }
+        if let Some(found) = candidates.into_iter().find(|c| std::path::Path::new(c).exists()) {
+            return found;
+        }
+    }
+    PROCESS_PATH.to_string()
+}
+
+// Starts FS25. Returns an error message if the game executable cannot be launched.
 #[tauri::command]
-async fn start_farming_simulator_25(app: AppHandle) {
+async fn start_farming_simulator_25(app: AppHandle) -> Result<(), String> {
     log::info!("start_farming_simulator_25");
     if let Some(_process_id) = get_process_id(PROCESS_NAME) {
-        return;
+        return Ok(());
     }
-    let app_path = get_app_path(PROCESS_NAME).unwrap_or_else(|| PROCESS_PATH.to_string());
+    let app_path = resolve_app_path();
 
     let spawn_result = {
         #[cfg(target_os = "macos")]
@@ -119,7 +147,7 @@ async fn start_farming_simulator_25(app: AppHandle) {
             sentry::Level::Error,
         );
         log::error!("Failed to start process at {}: {}", app_path, e);
-        return;
+        return Err(format!("Failed to start Farming Simulator 25 at '{}': {}", app_path, e));
     }
 
     match app.emit("process-started", ()) {
@@ -132,6 +160,7 @@ async fn start_farming_simulator_25(app: AppHandle) {
             log::error!("Error emitting process-started event: {}", e);
         }
     };
+    Ok(())
 }
 
 fn check_process(app: &AppHandle) {

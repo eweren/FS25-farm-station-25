@@ -7,6 +7,7 @@ import { getTeamHeader, getFS25Dir } from './shared.sync';
 import { config } from '../stores/config.store';
 import { error } from '@tauri-apps/plugin-log';
 import { dev } from '$app/environment';
+import { toast } from 'svelte-sonner';
 
 export const baseDomain = dev ? "127.0.0.1:8787" : "farm-station-25.eweren.workers.dev";
 export const protocol = dev ? "http" : "https";
@@ -149,6 +150,7 @@ export async function startGame() {
     await invoke("start_farming_simulator_25");
   } catch (e) {
     error(`Error starting game: ${e}`);
+    toast.error(`${e}`);
   }
 }
 
